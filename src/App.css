@@ -39,8 +39,15 @@
   overflow-x: auto;
   overflow-y: hidden;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start; /* Start from left for scrolling */
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Center fretboard on desktop only */
+@media (min-width: 769px) {
+  .fretboard-container {
+    justify-content: center;
+  }
 }
 
 .control-panel {
