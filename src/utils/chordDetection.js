@@ -33,8 +33,8 @@ export function getNoteAtPosition(stringIndex, fret) {
 
 /**
  * Common chord patterns with their fingerings
- * Format: { name: 'Chord Name', frets: [string6, string5, string4, string3, string2, string1] }
- * -1 means don't play that string, 0 means open string
+ * Format: { name: 'Chord Name', frets: [low E, A, D, G, B, high E] }
+ * -1 means don't play that string (X), 0 means open string
  */
 export const CHORD_DATABASE = [
   // Open Major chords

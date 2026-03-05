@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Fretboard from './components/Fretboard';
-import ChordHelper from './components/ChordHelper';
-import { detectChord, NOTE_COLORS, getNoteAtPosition } from './utils/chordDetection';
+import ChordPicker from './components/ChordPicker';
+import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
 import './App.css';
 
 function App() {
@@ -47,12 +47,18 @@ function App() {
   };
 
   const handleChordSelect = (chord) => {
+    if (!chord) {
+      // Clear selection
+      setSelectedNotes([]);
+      setDetectedChord(null);
+      return;
+    }
+    
     // Convert chord frets to selected notes
     const notes = [];
-    const stringNames = ['E', 'A', 'D', 'G', 'B', 'E']; // Low to high
     
     chord.frets.forEach((fret, stringIndex) => {
-      if (fret !== -1) {
+      if (fret !== -1 && fret !== 0) { // Only add fretted notes (not open strings or muted)
         const note = getNoteAtPosition(stringIndex, fret);
         notes.push({ string: stringIndex, fret, note });
       }
@@ -71,7 +77,10 @@ function App() {
       </header>
 
       <main className="app-main">
-        <ChordHelper onChordSelect={handleChordSelect} />
+        <ChordPicker 
+          onChordSelect={handleChordSelect} 
+          chordDatabase={CHORD_DATABASE}
+        />
         
         <div className="fretboard-container">
           <Fretboard 
@@ -152,11 +161,12 @@ function App() {
         <div className="instructions">
           <h3>How to use:</h3>
           <ul>
-            <li><strong>Quick start:</strong> Click a chord in "Common Chords to Try" above to auto-select it</li>
+            <li><strong>Quick start:</strong> Use the dropdown above to select any chord and see it on the fretboard</li>
+            <li>Chords with multiple positions are listed separately (e.g., "C Major (bar 3rd)")</li>
             <li>Or manually click notes on the fretboard to build your own chords</li>
             <li>Click a selected note again to deselect it</li>
             <li>The chord name appears automatically as you select notes</li>
-            <li>Try open chords like C, G, D, E, A for best results</li>
+            <li>Over 150 chords available including 7ths, sus, add9, and bar chords</li>
           </ul>
         </div>
       </main>
