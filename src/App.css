@@ -37,8 +37,10 @@
   margin-bottom: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   overflow-x: auto;
+  overflow-y: hidden;
   display: flex;
   justify-content: center;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .control-panel {
@@ -282,9 +284,19 @@
   
   .fretboard-container {
     padding: 0.5rem;
-    margin-left: -1rem;
-    margin-right: -1rem;
-    border-radius: 0;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    border-radius: 10px;
+  }
+  
+  .fretboard-container::after {
+    content: '\2194 Scroll horizontally \2194';
+    display: block;
+    text-align: center;
+    color: rgba(78, 205, 196, 0.6);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    font-style: italic;
   }
   
   .app-main {

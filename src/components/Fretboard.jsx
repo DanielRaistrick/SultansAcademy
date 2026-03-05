@@ -9,13 +9,16 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 350 });
   const [hoveredNote, setHoveredNote] = useState(null);
 
-  // Resize canvas based on window size
+  // Resize canvas based on window size, with minimum width for mobile
   useEffect(() => {
     const updateDimensions = () => {
+      const isMobile = window.innerWidth < 768;
+      const minWidth = isMobile ? 900 : 800; // Keep it usable on mobile
       const maxWidth = Math.min(1200, window.innerWidth - 40);
+      const width = Math.max(minWidth, maxWidth);
       const aspectRatio = 350 / 1200;
-      const newHeight = Math.max(250, maxWidth * aspectRatio);
-      setDimensions({ width: maxWidth, height: newHeight });
+      const newHeight = width * aspectRatio;
+      setDimensions({ width, height: newHeight });
     };
 
     updateDimensions();
