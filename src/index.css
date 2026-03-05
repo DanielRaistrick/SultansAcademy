@@ -1,14 +1,17 @@
 :root {
-  --bg-primary: #1a1a2e;
-  --bg-secondary: #16213e;
-  --text-primary: #eee;
-  --text-secondary: #aaa;
-  --accent-blue: #0f3460;
-  --accent-red: #e94560;
-  --fretboard-wood: #8b5a3c;
-  --fretboard-dark: #5d3922;
-  --string-color: #c0c0c0;
-  --fret-color: #d4af37;
+  /* North East England inspired - Newcastle Black & White with industrial modern touches */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #141821;
+  --bg-card: #1a1f2e;
+  --text-primary: #ffffff;
+  --text-secondary: #b8bcc8;
+  --accent-primary: #00d4ff; /* Modern cyan */
+  --accent-secondary: #ffd700; /* Golden accent */
+  --accent-stripe: #1a1f2e;
+  --fretboard-wood: #6b4423;
+  --fretboard-dark: #4a2f1a;
+  --string-color: #d0d0d0;
+  --fret-color: #c9b037;
 }
 
 * {
@@ -18,10 +21,30 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #0a0e1a 0%, #141821 50%, #0a0e1a 100%);
   color: var(--text-primary);
   min-height: 100vh;
+  position: relative;
+}
+
+/* Subtle Newcastle stripes pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 100px,
+    rgba(255, 255, 255, 0.01) 100px,
+    rgba(255, 255, 255, 0.01) 120px
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 #root {

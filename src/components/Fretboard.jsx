@@ -52,45 +52,67 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
     // Clear canvas
     ctx.clearRect(0, 0, dimensions.width, dimensions.height);
 
-    // Draw fretboard background
+    // Draw fretboard background with premium wood finish
     const gradient = ctx.createLinearGradient(padding.left, 0, dimensions.width - padding.right, 0);
-    gradient.addColorStop(0, '#8b5a3c');
-    gradient.addColorStop(0.5, '#a0694f');
-    gradient.addColorStop(1, '#6d4a2f');
+    gradient.addColorStop(0, '#5c3a21');
+    gradient.addColorStop(0.3, '#7d4f2e');
+    gradient.addColorStop(0.5, '#8b5a3c');
+    gradient.addColorStop(0.7, '#7d4f2e');
+    gradient.addColorStop(1, '#5c3a21');
     ctx.fillStyle = gradient;
     ctx.fillRect(padding.left, padding.top, dimensions.width - padding.left - padding.right, dimensions.height - padding.top - padding.bottom);
 
-    // Draw frets
+    // Draw frets with premium look
     for (let fret = 0; fret <= FRET_COUNT; fret++) {
       const x = padding.left + fret * fretWidth;
-      ctx.strokeStyle = fret === 0 ? '#f0e68c' : '#d4af37';
-      ctx.lineWidth = fret === 0 ? 6 : 2;
+      ctx.strokeStyle = fret === 0 ? '#e8d7b0' : '#c9b037';
+      ctx.lineWidth = fret === 0 ? 7 : 2.5;
       ctx.beginPath();
       ctx.moveTo(x, padding.top);
       ctx.lineTo(x, dimensions.height - padding.bottom);
       ctx.stroke();
+      
+      // Add subtle shadow for depth
+      if (fret > 0) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 1, padding.top);
+        ctx.lineTo(x + 1, dimensions.height - padding.bottom);
+        ctx.stroke();
+      }
     }
 
-    // Draw fret markers (dots)
+    // Draw fret markers with premium inlay style
     const markerFrets = [3, 5, 7, 9, 12];
     const doubleFrets = [12];
     markerFrets.forEach(fret => {
       const x = padding.left + (fret - 0.5) * fretWidth;
       const centerY = padding.top + (dimensions.height - padding.top - padding.bottom) / 2;
       
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      // Premium pearloid-style inlays
+      ctx.fillStyle = 'rgba(240, 240, 255, 0.4)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 1;
+      
       if (doubleFrets.includes(fret)) {
-        // Draw two dots for 12th fret
-        ctx.beginPath();
-        ctx.arc(x, centerY - 30, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x, centerY + 30, 8, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw two diamond-shaped markers for 12th fret
+        [centerY - 35, centerY + 35].forEach(y => {
+          ctx.beginPath();
+          ctx.moveTo(x, y - 10);
+          ctx.lineTo(x + 8, y);
+          ctx.lineTo(x, y + 10);
+          ctx.lineTo(x - 8, y);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        });
       } else {
+        // Single dot markers for other frets
         ctx.beginPath();
-        ctx.arc(x, centerY, 8, 0, Math.PI * 2);
+        ctx.arc(x, centerY, 9, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
       }
     });
 
@@ -119,23 +141,21 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
 
     // Draw string names (tuning) - reversed so high E is at top
     ctx.textAlign = 'right';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 18px "Segoe UI", sans-serif';
     const tuning = ['E', 'B', 'G', 'D', 'A', 'E']; // High E to Low E
     for (let string = 0; string < STRING_COUNT; string++) {
       const y = padding.top + string * stringSpacing;
       ctx.fillStyle = '#fff';
-      ctx.fillText(tuning[string], padding.left - 15, y + 5);
+      ctx.fillText(tuning[string], padding.left - 20, y + 6);
     }
 
     // Draw notes on fretboard
     for (let visualString = 0; visualString < STRING_COUNT; visualString++) {
       // Convert visual string position to actual string index (reverse)
       const string = STRING_COUNT - 1 - visualString;
-      for (let fret = 0; fret <= FRET_COUNT; fret++) {
+      for (let fret = 1; fret <= FRET_COUNT; fret++) { // Start from fret 1, skip open strings
         const note = getNoteAtPosition(string, fret);
-        const x = fret === 0 
-          ? padding.left - 30 
-          : padding.left + (fret - 0.5) * fretWidth;
+        const x = padding.left + (fret - 0.5) * fretWidth;
         const y = padding.top + visualString * stringSpacing;
 
         // Check if this note is selected
@@ -149,8 +169,8 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
           hoveredNote.fret === fret;
 
         // Draw note circle
-        const radius = isSelected ? 18 : (isHovered ? 16 : 12);
-        const alpha = isSelected ? 1 : (isHovered ? 0.8 : 0.6);
+        const radius = isSelected ? 20 : (isHovered ? 17 : 13);
+        const alpha = isSelected ? 1 : (isHovered ? 0.85 : 0.7);
         
         ctx.fillStyle = NOTE_COLORS[note];
         ctx.globalAlpha = alpha;
@@ -168,7 +188,7 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
         // Draw note name
         ctx.globalAlpha = 1;
         ctx.fillStyle = '#000';
-        ctx.font = isSelected ? 'bold 12px Arial' : '11px Arial';
+        ctx.font = isSelected ? 'bold 13px "Segoe UI"' : '11px "Segoe UI"';
         ctx.textAlign = 'center';
         ctx.fillText(note, x, y + 4);
       }
@@ -186,10 +206,8 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
     // Find which note was clicked
     for (let visualString = 0; visualString < STRING_COUNT; visualString++) {
       const string = STRING_COUNT - 1 - visualString; // Convert to actual string index
-      for (let fret = 0; fret <= FRET_COUNT; fret++) {
-        const noteX = fret === 0 
-          ? padding.left - 30 
-          : padding.left + (fret - 0.5) * fretWidth;
+      for (let fret = 1; fret <= FRET_COUNT; fret++) { // Start from fret 1
+        const noteX = padding.left + (fret - 0.5) * fretWidth;
         const noteY = padding.top + visualString * stringSpacing;
 
         const distance = Math.sqrt(Math.pow(x - noteX, 2) + Math.pow(y - noteY, 2));
@@ -213,10 +231,8 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
     let found = false;
     for (let visualString = 0; visualString < STRING_COUNT; visualString++) {
       const string = STRING_COUNT - 1 - visualString; // Convert to actual string index
-      for (let fret = 0; fret <= FRET_COUNT; fret++) {
-        const noteX = fret === 0 
-          ? padding.left - 30 
-          : padding.left + (fret - 0.5) * fretWidth;
+      for (let fret = 1; fret <= FRET_COUNT; fret++) { // Start from fret 1
+        const noteX = padding.left + (fret - 0.5) * fretWidth;
         const noteY = padding.top + visualString * stringSpacing;
 
         const distance = Math.sqrt(Math.pow(x - noteX, 2) + Math.pow(y - noteY, 2));
