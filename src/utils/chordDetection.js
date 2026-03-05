@@ -37,54 +37,152 @@ export function getNoteAtPosition(stringIndex, fret) {
  * -1 means don't play that string, 0 means open string
  */
 export const CHORD_DATABASE = [
-  // Open chords
+  // Open Major chords
   { name: 'C Major', frets: [-1, 3, 2, 0, 1, 0], notes: ['C', 'E', 'G'] },
   { name: 'C Major (alternate)', frets: [-1, 3, 2, 0, 1, 3], notes: ['C', 'E', 'G'] },
   { name: 'D Major', frets: [-1, -1, 0, 2, 3, 2], notes: ['D', 'F#', 'A'] },
   { name: 'E Major', frets: [0, 2, 2, 1, 0, 0], notes: ['E', 'G#', 'B'] },
   { name: 'G Major', frets: [3, 2, 0, 0, 0, 3], notes: ['G', 'B', 'D'] },
+  { name: 'G Major (alt)', frets: [3, 2, 0, 0, 3, 3], notes: ['G', 'B', 'D'] },
   { name: 'A Major', frets: [-1, 0, 2, 2, 2, 0], notes: ['A', 'C#', 'E'] },
+  
+  // Open Minor chords
   { name: 'A Minor', frets: [-1, 0, 2, 2, 1, 0], notes: ['A', 'C', 'E'] },
   { name: 'E Minor', frets: [0, 2, 2, 0, 0, 0], notes: ['E', 'G', 'B'] },
   { name: 'D Minor', frets: [-1, -1, 0, 2, 3, 1], notes: ['D', 'F', 'A'] },
-  { name: 'F Major', frets: [1, 3, 3, 2, 1, 1], notes: ['F', 'A', 'C'] },
-  { name: 'F Major (simplified)', frets: [-1, -1, 3, 2, 1, 1], notes: ['F', 'A', 'C'] },
-  { name: 'B♭ Major', frets: [-1, 1, 3, 3, 3, 1], notes: ['Bb', 'D', 'F'] },
+  { name: 'B Minor', frets: [-1, 2, 4, 4, 3, 2], notes: ['B', 'D', 'F#'] },
+  
+  // Open Dominant 7th chords
+  { name: 'A7', frets: [-1, 0, 2, 0, 2, 0], notes: ['A', 'C#', 'E', 'G'] },
+  { name: 'B7', frets: [-1, 2, 1, 2, 0, 2], notes: ['B', 'D#', 'F#', 'A'] },
+  { name: 'C7', frets: [-1, 3, 2, 3, 1, 0], notes: ['C', 'E', 'G', 'Bb'] },
+  { name: 'D7', frets: [-1, -1, 0, 2, 1, 2], notes: ['D', 'F#', 'A', 'C'] },
+  { name: 'E7', frets: [0, 2, 0, 1, 0, 0], notes: ['E', 'G#', 'B', 'D'] },
+  { name: 'G7', frets: [3, 2, 0, 0, 0, 1], notes: ['G', 'B', 'D', 'F'] },
+  
+  // Open Major 7th chords
+  { name: 'Amaj7', frets: [-1, 0, 2, 1, 2, 0], notes: ['A', 'C#', 'E', 'G#'] },
+  { name: 'Cmaj7', frets: [-1, 3, 2, 0, 0, 0], notes: ['C', 'E', 'G', 'B'] },
+  { name: 'Dmaj7', frets: [-1, -1, 0, 2, 2, 2], notes: ['D', 'F#', 'A', 'C#'] },
+  { name: 'Emaj7', frets: [0, 2, 1, 1, 0, 0], notes: ['E', 'G#', 'B', 'D#'] },
+  { name: 'Gmaj7', frets: [3, 2, 0, 0, 0, 2], notes: ['G', 'B', 'D', 'F#'] },
+  
+  // Open Minor 7th chords
+  { name: 'Am7', frets: [-1, 0, 2, 0, 1, 0], notes: ['A', 'C', 'E', 'G'] },
+  { name: 'Dm7', frets: [-1, -1, 0, 2, 1, 1], notes: ['D', 'F', 'A', 'C'] },
+  { name: 'Em7', frets: [0, 2, 0, 0, 0, 0], notes: ['E', 'G', 'B', 'D'] },
+  { name: 'Em7 (alt)', frets: [0, 2, 2, 0, 3, 0], notes: ['E', 'G', 'B', 'D'] },
+  
+  // Suspended chords
+  { name: 'Asus2', frets: [-1, 0, 2, 2, 0, 0], notes: ['A', 'B', 'E'] },
+  { name: 'Asus4', frets: [-1, 0, 2, 2, 3, 0], notes: ['A', 'D', 'E'] },
+  { name: 'Dsus2', frets: [-1, -1, 0, 2, 3, 0], notes: ['D', 'E', 'A'] },
+  { name: 'Dsus4', frets: [-1, -1, 0, 2, 3, 3], notes: ['D', 'G', 'A'] },
+  { name: 'Esus4', frets: [0, 2, 2, 2, 0, 0], notes: ['E', 'A', 'B'] },
+  { name: 'Gsus4', frets: [3, 3, 0, 0, 1, 3], notes: ['G', 'C', 'D'] },
+  
+  // 6th chords
+  { name: 'A6', frets: [-1, 0, 2, 2, 2, 2], notes: ['A', 'C#', 'E', 'F#'] },
+  { name: 'C6', frets: [-1, 3, 2, 2, 1, 0], notes: ['C', 'E', 'G', 'A'] },
+  { name: 'E6', frets: [0, 2, 2, 1, 2, 0], notes: ['E', 'G#', 'B', 'C#'] },
+  { name: 'Am6', frets: [-1, 0, 2, 2, 1, 2], notes: ['A', 'C', 'E', 'F#'] },
+  
+  // Add9 chords
+  { name: 'Aadd9', frets: [-1, 0, 2, 4, 2, 0], notes: ['A', 'C#', 'E', 'B'] },
+  { name: 'Cadd9', frets: [-1, 3, 2, 0, 3, 0], notes: ['C', 'E', 'G', 'D'] },
+  { name: 'Dadd9', frets: [-1, -1, 0, 2, 3, 0], notes: ['D', 'F#', 'A', 'E'] },
+  { name: 'Gadd9', frets: [3, 2, 0, 0, 0, 3], notes: ['G', 'B', 'D', 'A'] },
+  
+  // Diminished chords
+  { name: 'Adim', frets: [-1, 0, 1, 2, 1, 2], notes: ['A', 'C', 'Eb'] },
+  { name: 'Bdim', frets: [-1, 2, 3, 4, 3, 4], notes: ['B', 'D', 'F'] },
+  { name: 'Cdim', frets: [-1, 3, 4, 5, 4, 5], notes: ['C', 'Eb', 'Gb'] },
+  { name: 'Ddim', frets: [-1, -1, 0, 1, 0, 1], notes: ['D', 'F', 'Ab'] },
+  { name: 'Edim', frets: [-1, -1, 2, 3, 2, 3], notes: ['E', 'G', 'Bb'] },
+  
+  // Augmented chords
+  { name: 'Caug', frets: [-1, 3, 2, 1, 1, 0], notes: ['C', 'E', 'G#'] },
+  { name: 'Eaug', frets: [0, 3, 2, 1, 1, 0], notes: ['E', 'G#', 'C'] },
+  { name: 'Gaug', frets: [3, 2, 1, 0, 0, 3], notes: ['G', 'B', 'D#'] },
   
   // Bar chords - Major (E shape)
-  { name: 'F Major (bar)', frets: [1, 3, 3, 2, 1, 1], notes: ['F', 'A', 'C'] },
+  { name: 'F Major', frets: [1, 3, 3, 2, 1, 1], notes: ['F', 'A', 'C'] },
+  { name: 'F Major (simplified)', frets: [-1, -1, 3, 2, 1, 1], notes: ['F', 'A', 'C'] },
+  { name: 'F# Major (bar)', frets: [2, 4, 4, 3, 2, 2], notes: ['F#', 'A#', 'C#'] },
   { name: 'G Major (bar)', frets: [3, 5, 5, 4, 3, 3], notes: ['G', 'B', 'D'] },
+  { name: 'Ab Major (bar)', frets: [4, 6, 6, 5, 4, 4], notes: ['Ab', 'C', 'Eb'] },
   { name: 'A Major (bar)', frets: [5, 7, 7, 6, 5, 5], notes: ['A', 'C#', 'E'] },
+  { name: 'Bb Major (bar)', frets: [6, 8, 8, 7, 6, 6], notes: ['Bb', 'D', 'F'] },
   { name: 'B Major (bar)', frets: [7, 9, 9, 8, 7, 7], notes: ['B', 'D#', 'F#'] },
   
   // Bar chords - Major (A shape)
+  { name: 'B♭ Major', frets: [-1, 1, 3, 3, 3, 1], notes: ['Bb', 'D', 'F'] },
   { name: 'C Major (bar 3rd)', frets: [-1, 3, 5, 5, 5, 3], notes: ['C', 'E', 'G'] },
+  { name: 'C# Major (bar 4th)', frets: [-1, 4, 6, 6, 6, 4], notes: ['C#', 'F', 'G#'] },
   { name: 'D Major (bar 5th)', frets: [-1, 5, 7, 7, 7, 5], notes: ['D', 'F#', 'A'] },
+  { name: 'Eb Major (bar 6th)', frets: [-1, 6, 8, 8, 8, 6], notes: ['Eb', 'G', 'Bb'] },
   { name: 'E Major (bar 7th)', frets: [-1, 7, 9, 9, 9, 7], notes: ['E', 'G#', 'B'] },
+  { name: 'F Major (bar 8th)', frets: [-1, 8, 10, 10, 10, 8], notes: ['F', 'A', 'C'] },
   
   // Bar chords - Minor (Em shape)
+  { name: 'Fm (bar)', frets: [1, 3, 3, 1, 1, 1], notes: ['F', 'Ab', 'C'] },
   { name: 'F#m (bar)', frets: [2, 4, 4, 2, 2, 2], notes: ['F#', 'A', 'C#'] },
   { name: 'Gm (bar)', frets: [3, 5, 5, 3, 3, 3], notes: ['G', 'Bb', 'D'] },
+  { name: 'G#m (bar)', frets: [4, 6, 6, 4, 4, 4], notes: ['G#', 'B', 'D#'] },
   { name: 'Am (bar 5th)', frets: [5, 7, 7, 5, 5, 5], notes: ['A', 'C', 'E'] },
-  { name: 'Bm (bar)', frets: [7, 9, 9, 7, 7, 7], notes: ['B', 'D', 'F#'] },
+  { name: 'Bbm (bar)', frets: [6, 8, 8, 6, 6, 6], notes: ['Bb', 'Db', 'F'] },
+  { name: 'Bm (bar 7th)', frets: [7, 9, 9, 7, 7, 7], notes: ['B', 'D', 'F#'] },
   
   // Bar chords - Minor (Am shape)
   { name: 'Bm (bar 2nd)', frets: [-1, 2, 4, 4, 3, 2], notes: ['B', 'D', 'F#'] },
   { name: 'Cm (bar 3rd)', frets: [-1, 3, 5, 5, 4, 3], notes: ['C', 'Eb', 'G'] },
+  { name: 'C#m (bar 4th)', frets: [-1, 4, 6, 6, 5, 4], notes: ['C#', 'E', 'G#'] },
   { name: 'Dm (bar 5th)', frets: [-1, 5, 7, 7, 6, 5], notes: ['D', 'F', 'A'] },
+  { name: 'Ebm (bar 6th)', frets: [-1, 6, 8, 8, 7, 6], notes: ['Eb', 'Gb', 'Bb'] },
   { name: 'Em (bar 7th)', frets: [-1, 7, 9, 9, 8, 7], notes: ['E', 'G', 'B'] },
+  { name: 'Fm (bar 8th)', frets: [-1, 8, 10, 10, 9, 8], notes: ['F', 'Ab', 'C'] },
   { name: 'F#m (bar 2nd)', frets: [-1, 2, 4, 4, 2, 2], notes: ['F#', 'A', 'C#'] },
+  { name: 'Gm (bar 3rd)', frets: [-1, 3, 5, 5, 3, 3], notes: ['G', 'Bb', 'D'] },
   
-  // Power chords (common ones)
-  { name: 'E5 (Power Chord)', frets: [0, 2, 2, -1, -1, -1], notes: ['E', 'B'] },
-  { name: 'A5 (Power Chord)', frets: [-1, 0, 2, 2, -1, -1], notes: ['A', 'E'] },
-  { name: 'G5 (Power Chord)', frets: [3, 5, 5, -1, -1, -1], notes: ['G', 'D'] },
-  { name: 'D5 (Power Chord)', frets: [-1, 5, 7, 7, -1, -1], notes: ['D', 'A'] },
+  // Bar chords - Dominant 7th (E7 shape)
+  { name: 'F7 (bar)', frets: [1, 3, 1, 2, 1, 1], notes: ['F', 'A', 'C', 'Eb'] },
+  { name: 'G7 (bar)', frets: [3, 5, 3, 4, 3, 3], notes: ['G', 'B', 'D', 'F'] },
+  { name: 'A7 (bar)', frets: [5, 7, 5, 6, 5, 5], notes: ['A', 'C#', 'E', 'G'] },
+  { name: 'B7 (bar)', frets: [7, 9, 7, 8, 7, 7], notes: ['B', 'D#', 'F#', 'A'] },
   
-  // Seventh chords
-  { name: 'G7', frets: [3, 2, 0, 0, 0, 1], notes: ['G', 'B', 'D', 'F'] },
-  { name: 'C7', frets: [-1, 3, 2, 3, 1, 0], notes: ['C', 'E', 'G', 'Bb'] },
-  { name: 'D7', frets: [-1, -1, 0, 2, 1, 2], notes: ['D', 'F#', 'A', 'C'] },
+  // Bar chords - Dominant 7th (A7 shape)
+  { name: 'B7 (bar 2nd)', frets: [-1, 2, 1, 2, 0, 2], notes: ['B', 'D#', 'F#', 'A'] },
+  { name: 'C7 (bar 3rd)', frets: [-1, 3, 2, 3, 1, 0], notes: ['C', 'E', 'G', 'Bb'] },
+  { name: 'D7 (bar 5th)', frets: [-1, 5, 4, 5, 3, 5], notes: ['D', 'F#', 'A', 'C'] },
+  { name: 'E7 (bar 7th)', frets: [-1, 7, 6, 7, 5, 7], notes: ['E', 'G#', 'B', 'D'] },
+  
+  // Bar chords - Minor 7th (Em7 shape)
+  { name: 'Fm7 (bar)', frets: [1, 3, 1, 1, 1, 1], notes: ['F', 'Ab', 'C', 'Eb'] },
+  { name: 'Gm7 (bar)', frets: [3, 5, 3, 3, 3, 3], notes: ['G', 'Bb', 'D', 'F'] },
+  { name: 'Am7 (bar 5th)', frets: [5, 7, 5, 5, 5, 5], notes: ['A', 'C', 'E', 'G'] },
+  { name: 'Bm7 (bar)', frets: [7, 9, 7, 7, 7, 7], notes: ['B', 'D', 'F#', 'A'] },
+  
+  // Bar chords - Major 7th (Emaj7 shape)
+  { name: 'Fmaj7 (bar)', frets: [1, 3, 2, 2, 1, 1], notes: ['F', 'A', 'C', 'E'] },
+  { name: 'Gmaj7 (bar)', frets: [3, 5, 4, 4, 3, 3], notes: ['G', 'B', 'D', 'F#'] },
+  { name: 'Amaj7 (bar)', frets: [5, 7, 6, 6, 5, 5], notes: ['A', 'C#', 'E', 'G#'] },
+  { name: 'Bmaj7 (bar)', frets: [7, 9, 8, 8, 7, 7], notes: ['B', 'D#', 'F#', 'A#'] },
+  
+  // Power chords
+  { name: 'E5', frets: [0, 2, 2, -1, -1, -1], notes: ['E', 'B'] },
+  { name: 'F5', frets: [1, 3, 3, -1, -1, -1], notes: ['F', 'C'] },
+  { name: 'F#5', frets: [2, 4, 4, -1, -1, -1], notes: ['F#', 'C#'] },
+  { name: 'G5', frets: [3, 5, 5, -1, -1, -1], notes: ['G', 'D'] },
+  { name: 'A5', frets: [-1, 0, 2, 2, -1, -1], notes: ['A', 'E'] },
+  { name: 'B5', frets: [-1, 2, 4, 4, -1, -1], notes: ['B', 'F#'] },
+  { name: 'C5', frets: [-1, 3, 5, 5, -1, -1], notes: ['C', 'G'] },
+  { name: 'D5', frets: [-1, 5, 7, 7, -1, -1], notes: ['D', 'A'] },
+  
+  // 9th chords
+  { name: 'A9', frets: [-1, 0, 2, 4, 2, 3], notes: ['A', 'C#', 'E', 'G', 'B'] },
+  { name: 'E9', frets: [0, 2, 0, 1, 0, 2], notes: ['E', 'G#', 'B', 'D', 'F#'] },
+  { name: 'G9', frets: [3, 2, 0, 2, 0, 1], notes: ['G', 'B', 'D', 'F', 'A'] },
+  { name: 'D9', frets: [-1, -1, 0, 2, 1, 0], notes: ['D', 'F#', 'A', 'C', 'E'] },
 ];
 
 /**
