@@ -9,6 +9,20 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 350 });
   const [hoveredNote, setHoveredNote] = useState(null);
 
+  // Resize canvas based on window size
+  useEffect(() => {
+    const updateDimensions = () => {
+      const maxWidth = Math.min(1200, window.innerWidth - 40);
+      const aspectRatio = 350 / 1200;
+      const newHeight = Math.max(250, maxWidth * aspectRatio);
+      setDimensions({ width: maxWidth, height: newHeight });
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
   // Canvas drawing parameters
   const padding = { left: 80, right: 40, top: 40, bottom: 40 };
   const fretWidth = (dimensions.width - padding.left - padding.right) / FRET_COUNT;

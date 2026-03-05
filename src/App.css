@@ -36,6 +36,9 @@
   padding: 1rem;
   margin-bottom: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .control-panel {
@@ -266,10 +269,43 @@
 
 @media (max-width: 768px) {
   .app-header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
   }
   
   .chord-result {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+  
+  .fretboard-container {
+    padding: 0.5rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+  
+  .app-main {
+    padding: 0.5rem;
+  }
+  
+  .chord-display {
+    padding: 1.5rem;
+  }
+  
+  .selected-notes {
+    padding: 1rem;
+  }
+  
+  .note-item {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+  
+  .instructions {
+    padding: 1rem;
+    font-size: 0.9rem;
   }
 }
