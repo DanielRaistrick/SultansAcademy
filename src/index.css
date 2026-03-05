@@ -1,0 +1,30 @@
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --text-primary: #eee;
+  --text-secondary: #aaa;
+  --accent-blue: #0f3460;
+  --accent-red: #e94560;
+  --fretboard-wood: #8b5a3c;
+  --fretboard-dark: #5d3922;
+  --string-color: #c0c0c0;
+  --fret-color: #d4af37;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}

@@ -1,0 +1,90 @@
+.chord-helper {
+  background: rgba(22, 33, 62, 0.4);
+  border-radius: 15px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  border: 2px solid rgba(78, 205, 196, 0.3);
+}
+
+.chord-helper-toggle {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(78, 205, 196, 0.2);
+  border: none;
+  border-radius: 10px;
+  color: #4ecdc4;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.chord-helper-toggle:hover {
+  background: rgba(78, 205, 196, 0.3);
+  transform: translateY(-1px);
+}
+
+.chord-helper-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chord-card {
+  background: linear-gradient(135deg, rgba(15, 52, 96, 0.6) 0%, rgba(22, 33, 62, 0.6) 100%);
+  padding: 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.chord-card:hover {
+  border-color: #4ecdc4;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+}
+
+.chord-card-name {
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.chord-card-diagram {
+  font-family: 'Courier New', monospace;
+  font-size: 1.2rem;
+  color: #ffd93d;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
+.chord-card-hint {
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.string-label {
+  width: 18px;
+  text-align: center;
+}
