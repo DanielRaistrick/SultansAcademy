@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import Fretboard from './components/Fretboard';
 import ChordPicker from './components/ChordPicker';
+import Navigation from './components/Navigation';
+import Resources from './components/Resources';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
 import './App.css';
 
 function App() {
   const [selectedNotes, setSelectedNotes] = useState([]);
   const [detectedChord, setDetectedChord] = useState(null);
+  const [activePage, setActivePage] = useState('fretboard');
 
   const handleNoteSelect = (noteData) => {
     setSelectedNotes(prevNotes => {
@@ -76,8 +79,12 @@ function App() {
         <p className="subtitle">Interactive Fretboard Explorer</p>
       </header>
 
+      <Navigation activePage={activePage} onPageChange={setActivePage} />
+
       <main className="app-main">
-        <ChordPicker 
+        {activePage === 'fretboard' ? (
+          <>
+            <ChordPicker 
           onChordSelect={handleChordSelect} 
           chordDatabase={CHORD_DATABASE}
         />
@@ -165,6 +172,10 @@ function App() {
             <li>Chords with multiple positions are listed separately (e.g., "C Major (bar 3rd)")</li>
             <li>Or manually click notes on the fretboard to build your own chords</li>
             <li>Click a selected note again to deselect it</li>
+          </>
+        ) : (
+          <Resources />
+        )}
             <li>The chord name appears automatically as you select notes</li>
             <li>Over 150 chords available including 7ths, sus, add9, and bar chords</li>
           </ul>
