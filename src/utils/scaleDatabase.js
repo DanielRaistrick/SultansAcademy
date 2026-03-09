@@ -111,12 +111,15 @@ export const getScalePositions = (root, scaleType) => {
     if (last === undefined || fret - last > 1) anchors.push(fret);
   }
 
-  return anchors.map((startFret, i) => ({
-    id: `pos_${i}`,
-    label: `Pattern ${i + 1}  —  from fret ${startFret}`,
-    startFret,
-    notes: allNotes.filter((n) => n.fret >= startFret && n.fret <= startFret + windowSize),
-  }));
+  return anchors.map((startFret, i) => {
+    const windowStart = Math.max(1, startFret - 1);
+    return {
+      id: `pos_${i}`,
+      label: `Pattern ${i + 1}  —  from fret ${startFret}`,
+      startFret,
+      notes: allNotes.filter((n) => n.fret >= windowStart && n.fret <= startFret + windowSize),
+    };
+  });
 };
 
 /** Returns the note names in the scale (in interval order). */
