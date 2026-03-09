@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+} from 'firebase/firestore';
+import { db } from '../firebase';
 import './LessonNotes.css';
-
-const STORAGE_KEY = 'sultans_academy_lesson_notes';
 
 const emptyForm = {
   date: new Date().toISOString().split('T')[0],
@@ -18,35 +27,36 @@ const parseBullets = (text) =>
     .filter(Boolean);
 
 const LessonNotes = () => {
-  const [notes, setNotes] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
+  // Real-time listener — updates automatically on any device
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-  }, [notes]);
+    const q = query(collection(db, 'lessonNotes'), orderBy('date', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setNotes(
+        snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!form.date) return;
 
-    const entry = {
-      id: editingId ?? Date.now(),
+    setSaving(true);
+    const data = {
       date: form.date,
       toWorkOn: parseBullets(form.toWorkOn),
       goals: {
@@ -56,19 +66,20 @@ const LessonNotes = () => {
       },
     };
 
-    setNotes((prev) => {
+    try {
       if (editingId !== null) {
-        return prev
-          .map((n) => (n.id === editingId ? entry : n))
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        await updateDoc(doc(db, 'lessonNotes', editingId), data);
+        setExpandedId(editingId);
+      } else {
+        const ref = await addDoc(collection(db, 'lessonNotes'), data);
+        setExpandedId(ref.id);
       }
-      return [entry, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date));
-    });
-
-    setForm(emptyForm);
-    setShowForm(false);
-    setEditingId(null);
-    setExpandedId(entry.id);
+      setForm(emptyForm);
+      setShowForm(false);
+      setEditingId(null);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = (note) => {
@@ -84,9 +95,9 @@ const LessonNotes = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('Delete this lesson note?')) return;
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    await deleteDoc(doc(db, 'lessonNotes', id));
     if (expandedId === id) setExpandedId(null);
   };
 
@@ -206,14 +217,21 @@ const LessonNotes = () => {
             <button type="button" className="btn-cancel" onClick={handleCancel}>
               Cancel
             </button>
-            <button type="submit" className="btn-save">
-              {editingId !== null ? 'Save Changes' : 'Save Lesson'}
+            <button type="submit" className="btn-save" disabled={saving}>
+              {saving ? 'Saving…' : editingId !== null ? 'Save Changes' : 'Save Lesson'}
             </button>
           </div>
         </form>
       )}
 
-      {notes.length === 0 && !showForm && (
+      {loading && (
+        <div className="notes-empty">
+          <span className="notes-empty-icon">⏳</span>
+          <p>Loading your lesson notes…</p>
+        </div>
+      )}
+
+      {!loading && notes.length === 0 && !showForm && (
         <div className="notes-empty">
           <span className="notes-empty-icon">📋</span>
           <p>No lesson notes yet. Add your first lesson above!</p>
