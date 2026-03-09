@@ -3,23 +3,32 @@
   margin: 0 auto;
 }
 
-.resources-header {
-  text-align: center;
+/* ── Header row with Add button ── */
+.resources-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin-bottom: 3rem;
-  padding: 2rem 1rem;
+  padding: 2rem;
   background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, transparent 100%);
   border-radius: 20px;
   border: 1px solid rgba(0, 212, 255, 0.1);
 }
 
+.resources-header {
+  text-align: left;
+}
+
 .resources-header h2 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   letter-spacing: -0.5px;
 }
 
@@ -157,40 +166,27 @@
 }
 
 .resources-footer {
-  margin-top: 3rem;
-  text-align: center;
+  display: none;
 }
 
 .add-resource-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, rgba(26, 31, 46, 0.7) 0%, rgba(20, 24, 33, 0.8) 100%);
-  border-radius: 20px;
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-.hint-icon {
-  font-size: 2rem;
-}
-
-.add-resource-hint p {
-  color: var(--text-secondary);
-  font-size: 1rem;
-  margin: 0;
-  font-weight: 500;
+  display: none;
 }
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .resources-header h2 {
-    font-size: 2rem;
+  .resources-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.25rem;
   }
 
-  .resources-subtitle {
-    font-size: 1rem;
+  .btn-add-resource {
+    justify-content: center;
+  }
+
+  .resource-form {
+    padding: 1.25rem;
   }
 
   .resources-grid {

@@ -10,6 +10,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { sanitizeText } from '../utils/sanitize';
 import './LessonNotes.css';
 
 const emptyForm = {
@@ -23,7 +24,7 @@ const emptyForm = {
 const parseBullets = (text) =>
   text
     .split('\n')
-    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+    .map((line) => sanitizeText(line.replace(/^[-•*]\s*/, ''), 500))
     .filter(Boolean);
 
 const LessonNotes = () => {
@@ -57,7 +58,7 @@ const LessonNotes = () => {
 
     setSaving(true);
     const data = {
-      date: form.date,
+      date: sanitizeText(form.date, 20),
       toWorkOn: parseBullets(form.toWorkOn),
       goals: {
         repertoire: parseBullets(form.goalsRepertoire),
@@ -264,6 +265,17 @@ const LessonNotes = () => {
                   <span className="note-chevron">{isOpen ? '▲' : '▼'}</span>
                 </div>
               </button>
+
+              {!isOpen && note.toWorkOn.length > 0 && (
+                <div className="note-card-preview">
+                  {note.toWorkOn.slice(0, 3).map((item, i) => (
+                    <span key={i} className="preview-item">– {item}</span>
+                  ))}
+                  {note.toWorkOn.length > 3 && (
+                    <span className="preview-more">+{note.toWorkOn.length - 3} more…</span>
+                  )}
+                </div>
+              )}
 
               {isOpen && (
                 <div className="note-card-body">
