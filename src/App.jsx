@@ -3,6 +3,7 @@ import Fretboard from './components/Fretboard';
 import ChordPicker from './components/ChordPicker';
 import Navigation from './components/Navigation';
 import Resources from './components/Resources';
+import LessonNotes from './components/LessonNotes';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
 import './App.css';
 
@@ -177,8 +178,10 @@ function App() {
           </ul>
         </div>
           </>
-        ) : (
+        ) : activePage === 'resources' ? (
           <Resources />
+        ) : (
+          <LessonNotes />
         )}
       </main>
 

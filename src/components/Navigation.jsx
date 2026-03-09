@@ -18,6 +18,13 @@ const Navigation = ({ activePage, onPageChange }) => {
         <span className="nav-icon">📚</span>
         <span className="nav-label">Learning Resources</span>
       </button>
+      <button
+        className={`nav-button ${activePage === 'lessons' ? 'active' : ''}`}
+        onClick={() => onPageChange('lessons')}
+      >
+        <span className="nav-icon">📋</span>
+        <span className="nav-label">Lesson Notes</span>
+      </button>
     </nav>
   );
 };
