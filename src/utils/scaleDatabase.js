@@ -53,10 +53,13 @@ export const SCALE_TYPES = [
 ];
 
 /**
- * Returns all positions of scale notes on a standard-tuned guitar (frets 1–12).
+ * Returns all positions of scale notes on a standard-tuned guitar.
  * Each entry: { string, fret, note, isRoot }
+ * @param {string} root  - root note name
+ * @param {number[]} intervals - semitone intervals
+ * @param {number} [maxFret=12] - highest fret to include
  */
-export const getScaleNotesOnFretboard = (root, intervals) => {
+export const getScaleNotesOnFretboard = (root, intervals, maxFret = 12) => {
   const rootIndex = NOTE_SEQUENCE.indexOf(root);
   if (rootIndex === -1) return [];
 
@@ -65,7 +68,7 @@ export const getScaleNotesOnFretboard = (root, intervals) => {
   const result = [];
   for (let string = 0; string < 6; string++) {
     const openIdx = NOTE_SEQUENCE.indexOf(STANDARD_TUNING[string]);
-    for (let fret = 1; fret <= 12; fret++) {
+    for (let fret = 1; fret <= maxFret; fret++) {
       const noteIdx = (openIdx + fret) % 12;
       if (scaleSet.has(noteIdx)) {
         result.push({
@@ -78,6 +81,42 @@ export const getScaleNotesOnFretboard = (root, intervals) => {
     }
   }
   return result;
+};
+
+/**
+ * Returns movable pattern positions for a scale.
+ * Each position groups scale notes into a box-shaped fret window anchored
+ * to one of the root-note occurrences across the neck.
+ *
+ * @param {string} root
+ * @param {{ intervals: number[] }} scaleType
+ * @returns {{ id: string, label: string, notes: Array }[]}
+ */
+export const getScalePositions = (root, scaleType) => {
+  // Pentatonic / blues shapes fit neatly in 4 frets; 7-note scales need 5.
+  const windowSize = scaleType.intervals.length <= 5 ? 3 : 4;
+
+  // Extend to fret 15 so patterns near the top of a 12-fret board are captured.
+  const allNotes = getScaleNotesOnFretboard(root, scaleType.intervals, 15);
+
+  // Collect every fret where the root appears (any string).
+  const rootFrets = [...new Set(allNotes.filter((n) => n.isRoot).map((n) => n.fret))].sort(
+    (a, b) => a - b,
+  );
+
+  // Collapse roots that are within 1 fret of each other (avoids near-duplicate patterns).
+  const anchors = [];
+  for (const fret of rootFrets) {
+    const last = anchors[anchors.length - 1];
+    if (last === undefined || fret - last > 1) anchors.push(fret);
+  }
+
+  return anchors.map((startFret, i) => ({
+    id: `pos_${i}`,
+    label: `Pattern ${i + 1}  —  from fret ${startFret}`,
+    startFret,
+    notes: allNotes.filter((n) => n.fret >= startFret && n.fret <= startFret + windowSize),
+  }));
 };
 
 /** Returns the note names in the scale (in interval order). */

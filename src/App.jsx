@@ -6,7 +6,6 @@ import Navigation from './components/Navigation';
 import Resources from './components/Resources';
 import LessonNotes from './components/LessonNotes';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
-import { getScaleNotesOnFretboard } from './utils/scaleDatabase';
 import './App.css';
 
 function App() {
@@ -15,12 +14,8 @@ function App() {
   const [activePage, setActivePage] = useState('fretboard');
   const [scaleNotes, setScaleNotes] = useState([]);
 
-  const handleScaleSelect = (root, scaleType) => {
-    if (root && scaleType) {
-      setScaleNotes(getScaleNotesOnFretboard(root, scaleType.intervals));
-    } else {
-      setScaleNotes([]);
-    }
+  const handleScaleSelect = (notes) => {
+    setScaleNotes(notes ?? []);
   };
 
   const handleNoteSelect = (noteData) => {

@@ -1,5 +1,12 @@
-import { useState } from 'react';
-import { SCALE_TYPES, ROOT_NOTES, ROOT_DISPLAY, getScaleNoteNames } from '../utils/scaleDatabase';
+import { useMemo, useState } from 'react';
+import {
+  SCALE_TYPES,
+  ROOT_NOTES,
+  ROOT_DISPLAY,
+  getScaleNoteNames,
+  getScaleNotesOnFretboard,
+  getScalePositions,
+} from '../utils/scaleDatabase';
 import './ScalePicker.css';
 
 const GROUPS = [...new Set(SCALE_TYPES.map((s) => s.group))];
@@ -7,36 +14,58 @@ const GROUPS = [...new Set(SCALE_TYPES.map((s) => s.group))];
 const ScalePicker = ({ onScaleSelect }) => {
   const [root, setRoot] = useState('');
   const [scaleId, setScaleId] = useState('');
+  const [positionId, setPositionId] = useState('all');
 
-  const scaleType = SCALE_TYPES.find((s) => s.id === scaleId) ?? null;
-  const noteNames = root && scaleType ? getScaleNoteNames(root, scaleType.intervals) : [];
-  const isActive = root && scaleId;
+  const scaleType = useMemo(() => SCALE_TYPES.find((s) => s.id === scaleId) ?? null, [scaleId]);
+  const noteNames = useMemo(
+    () => (root && scaleType ? getScaleNoteNames(root, scaleType.intervals) : []),
+    [root, scaleType],
+  );
+  const positions = useMemo(
+    () => (root && scaleType ? getScalePositions(root, scaleType) : []),
+    [root, scaleType],
+  );
 
-  const notify = (newRoot, newId) => {
-    const type = SCALE_TYPES.find((s) => s.id === newId) ?? null;
-    if (newRoot && type) {
-      onScaleSelect(newRoot, type);
+  const isActive = !!(root && scaleId);
+
+  // Emit the correct notes array upward.
+  const emitNotes = (r, type, posId, poss) => {
+    if (!r || !type) { onScaleSelect([]); return; }
+    if (posId === 'all') {
+      onScaleSelect(getScaleNotesOnFretboard(r, type.intervals));
     } else {
-      onScaleSelect(null, null);
+      const pos = poss.find((p) => p.id === posId);
+      onScaleSelect(pos ? pos.notes : getScaleNotesOnFretboard(r, type.intervals));
     }
   };
 
   const handleRootChange = (e) => {
     const val = e.target.value;
     setRoot(val);
-    notify(val, scaleId);
+    setPositionId('all');
+    const type = SCALE_TYPES.find((s) => s.id === scaleId) ?? null;
+    emitNotes(val, type, 'all', []);
   };
 
   const handleScaleChange = (e) => {
     const val = e.target.value;
     setScaleId(val);
-    notify(root, val);
+    setPositionId('all');
+    const type = SCALE_TYPES.find((s) => s.id === val) ?? null;
+    emitNotes(root, type, 'all', []);
+  };
+
+  const handlePositionChange = (e) => {
+    const val = e.target.value;
+    setPositionId(val);
+    emitNotes(root, scaleType, val, positions);
   };
 
   const handleClear = () => {
     setRoot('');
     setScaleId('');
-    onScaleSelect(null, null);
+    setPositionId('all');
+    onScaleSelect([]);
   };
 
   return (
@@ -50,6 +79,7 @@ const ScalePicker = ({ onScaleSelect }) => {
         )}
       </div>
 
+      {/* Row 1 – root note + scale type */}
       <div className="scale-picker-dropdowns">
         <select
           className="scale-picker-select scale-picker-root"
@@ -82,10 +112,33 @@ const ScalePicker = ({ onScaleSelect }) => {
         </select>
       </div>
 
+      {/* Row 2 – position / pattern picker (visible once root + scale chosen) */}
+      {isActive && positions.length > 0 && (
+        <div className="scale-picker-position-row">
+          <select
+            className="scale-picker-select scale-picker-position"
+            value={positionId}
+            onChange={handlePositionChange}
+          >
+            <option value="all">All patterns (full neck)</option>
+            {positions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {isActive && noteNames.length > 0 && (
         <div className="scale-picker-info">
           <div className="scale-info-title">
             {root} {scaleType.name}
+            {positionId !== 'all' && (
+              <span className="scale-info-pattern-tag">
+                &nbsp;·&nbsp;{positions.find((p) => p.id === positionId)?.label}
+              </span>
+            )}
           </div>
           <div className="scale-info-notes">
             {noteNames.map((n, i) => (
