@@ -58,6 +58,20 @@
   width: 100%;
 }
 
+/* ── Chord + Scale picker row ── */
+.picker-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 700px) {
+  .picker-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .fretboard-container {
   background: linear-gradient(135deg, rgba(26, 31, 46, 0.8) 0%, rgba(20, 24, 33, 0.9) 100%);
   border-radius: 20px;

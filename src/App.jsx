@@ -1,16 +1,27 @@
 import { useState } from 'react';
 import Fretboard from './components/Fretboard';
 import ChordPicker from './components/ChordPicker';
+import ScalePicker from './components/ScalePicker';
 import Navigation from './components/Navigation';
 import Resources from './components/Resources';
 import LessonNotes from './components/LessonNotes';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
+import { getScaleNotesOnFretboard } from './utils/scaleDatabase';
 import './App.css';
 
 function App() {
   const [selectedNotes, setSelectedNotes] = useState([]);
   const [detectedChord, setDetectedChord] = useState(null);
   const [activePage, setActivePage] = useState('fretboard');
+  const [scaleNotes, setScaleNotes] = useState([]);
+
+  const handleScaleSelect = (root, scaleType) => {
+    if (root && scaleType) {
+      setScaleNotes(getScaleNotesOnFretboard(root, scaleType.intervals));
+    } else {
+      setScaleNotes([]);
+    }
+  };
 
   const handleNoteSelect = (noteData) => {
     setSelectedNotes(prevNotes => {
@@ -85,15 +96,19 @@ function App() {
       <main className="app-main">
         {activePage === 'fretboard' ? (
           <>
+            <div className="picker-row">
             <ChordPicker 
           onChordSelect={handleChordSelect} 
           chordDatabase={CHORD_DATABASE}
         />
+            <ScalePicker onScaleSelect={handleScaleSelect} />
+            </div>
         
         <div className="fretboard-container">
           <Fretboard 
             selectedNotes={selectedNotes} 
             onNoteSelect={handleNoteSelect}
+            scaleNotes={scaleNotes}
           />
         </div>
 

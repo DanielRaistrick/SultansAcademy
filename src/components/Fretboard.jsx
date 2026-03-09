@@ -4,7 +4,7 @@ import { getNoteAtPosition, NOTE_COLORS } from '../utils/chordDetection';
 const FRET_COUNT = 12;
 const STRING_COUNT = 6;
 
-const Fretboard = ({ selectedNotes, onNoteSelect }) => {
+const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
   const canvasRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 1200, height: 350 });
   const [hoveredNote, setHoveredNote] = useState(null);
@@ -46,7 +46,7 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
     ctx.scale(dpr, dpr);
 
     drawFretboard(ctx);
-  }, [dimensions, selectedNotes, hoveredNote]);
+  }, [dimensions, selectedNotes, hoveredNote, scaleNotes]);
 
   const drawFretboard = (ctx) => {
     // Clear canvas
@@ -149,6 +149,12 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
       ctx.fillText(tuning[string], padding.left - 20, y + 6);
     }
 
+    // Build fast lookup for scale notes: "string-fret" -> { note, isRoot }
+    const scaleNoteMap = new Map(
+      scaleNotes.map((n) => [`${n.string}-${n.fret}`, n])
+    );
+    const hasScale = scaleNoteMap.size > 0;
+
     // Draw notes on fretboard
     for (let visualString = 0; visualString < STRING_COUNT; visualString++) {
       // Convert visual string position to actual string index (reverse)
@@ -158,43 +164,90 @@ const Fretboard = ({ selectedNotes, onNoteSelect }) => {
         const x = padding.left + (fret - 0.5) * fretWidth;
         const y = padding.top + visualString * stringSpacing;
 
-        // Check if this note is selected
         const isSelected = selectedNotes.some(
-          selected => selected.string === string && selected.fret === fret
+          (s) => s.string === string && s.fret === fret
         );
+        const isHovered =
+          hoveredNote && hoveredNote.string === string && hoveredNote.fret === fret;
 
-        // Check if this note is hovered
-        const isHovered = hoveredNote && 
-          hoveredNote.string === string && 
-          hoveredNote.fret === fret;
+        if (hasScale) {
+          const scaleNote = scaleNoteMap.get(`${string}-${fret}`);
+          const isInScale = !!scaleNote;
+          const isRoot = scaleNote?.isRoot ?? false;
 
-        // Draw note circle
-        const radius = isSelected ? 20 : (isHovered ? 17 : 13);
-        const alpha = isSelected ? 1 : (isHovered ? 0.85 : 0.7);
-        
-        ctx.fillStyle = NOTE_COLORS[note];
-        ctx.globalAlpha = alpha;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
+          if (!isInScale && !isSelected) {
+            // Non-scale, non-selected: tiny faint marker only
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = '#aaa';
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            continue;
+          }
 
-        // Draw border for selected notes
-        if (isSelected) {
-          ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 3;
-          ctx.stroke();
+          // Determine colour & radius
+          let color, radius;
+          if (isSelected) {
+            color = isRoot ? '#FFD700' : (isInScale ? '#00d4ff' : NOTE_COLORS[note]);
+            radius = 20;
+          } else if (isRoot) {
+            color = '#FFD700';
+            radius = isHovered ? 18 : 16;
+          } else {
+            color = '#00d4ff';
+            radius = isHovered ? 16 : 14;
+          }
+
+          ctx.globalAlpha = 0.92;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isSelected) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          } else if (isRoot) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = '#000';
+          ctx.font = (isSelected || isRoot) ? 'bold 12px "Segoe UI"' : '11px "Segoe UI"';
+          ctx.textAlign = 'center';
+          ctx.fillText(note, x, y + 4);
+
+        } else {
+          // ── Normal mode (no scale active) ──────────────────
+          const radius = isSelected ? 20 : (isHovered ? 17 : 13);
+          const alpha  = isSelected ? 1  : (isHovered ? 0.85 : 0.7);
+
+          ctx.fillStyle  = NOTE_COLORS[note];
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isSelected) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = '#000';
+          ctx.font = isSelected ? 'bold 13px "Segoe UI"' : '11px "Segoe UI"';
+          ctx.textAlign = 'center';
+          ctx.fillText(note, x, y + 4);
         }
 
-        // Draw note name
         ctx.globalAlpha = 1;
-        ctx.fillStyle = '#000';
-        ctx.font = isSelected ? 'bold 13px "Segoe UI"' : '11px "Segoe UI"';
-        ctx.textAlign = 'center';
-        ctx.fillText(note, x, y + 4);
       }
     }
-
-    ctx.globalAlpha = 1;
   };
 
   const handleCanvasClick = (event) => {
