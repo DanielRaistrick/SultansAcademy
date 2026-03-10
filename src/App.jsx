@@ -5,6 +5,7 @@ import ScalePicker from './components/ScalePicker';
 import Navigation from './components/Navigation';
 import Resources from './components/Resources';
 import LessonNotes from './components/LessonNotes';
+import ChordProgressions from './components/ChordProgressions';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
 import './App.css';
 
@@ -188,6 +189,8 @@ function App() {
           </ul>
         </div>
           </>
+        ) : activePage === 'progressions' ? (
+          <ChordProgressions />
         ) : activePage === 'resources' ? (
           <Resources />
         ) : (

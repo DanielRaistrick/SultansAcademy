@@ -12,6 +12,13 @@ const Navigation = ({ activePage, onPageChange }) => {
         <span className="nav-label">Fretboard</span>
       </button>
       <button
+        className={`nav-button ${activePage === 'progressions' ? 'active' : ''}`}
+        onClick={() => onPageChange('progressions')}
+      >
+        <span className="nav-icon">🎶</span>
+        <span className="nav-label">Progressions</span>
+      </button>
+      <button
         className={`nav-button ${activePage === 'resources' ? 'active' : ''}`}
         onClick={() => onPageChange('resources')}
       >
