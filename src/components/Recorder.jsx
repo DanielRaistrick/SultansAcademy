@@ -410,23 +410,7 @@ const Recorder = () => {
 
         {error && <div className="recorder-error">{error}</div>}
 
-        {/* ── Spark Neo hint ── */}
-        <div className="recorder-hint">
-          <strong>Recording with a Spark NEO?</strong>{' '}
-          The NEO sends its processed audio straight to the headphones — the tablet never
-          sees it as a digital input, so the browser can&apos;t capture it directly.
-          <br /><br />
-          <strong>Easiest fix (~£3):</strong> plug a{' '}
-          <em>3.5mm TRRS Y-splitter</em> into the NEO&apos;s headphone jack. Connect your
-          headphones to one branch and a short 3.5mm-to-3.5mm TRRS cable from the other
-          branch into your tablet&apos;s headphone/mic combo socket. The tablet will then
-          see the NEO&apos;s processed output as a microphone input — select it from the
-          dropdown above.
-          <br /><br />
-          <strong>Alternative:</strong> a small USB audio interface (e.g. Focusrite Scarlett
-          Solo) connected via USB-C OTG will give the cleanest signal, though it captures
-          the dry guitar rather than the NEO&apos;s amp models.
-        </div>
+
       </div>
 
       {/* ── Saved recordings ── */}

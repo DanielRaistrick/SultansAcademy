@@ -220,29 +220,6 @@
   font-size: 0.9rem;
 }
 
-/* ── Spark Neo hint ────────────────────────────────────────────────────────── */
-
-.recorder-hint {
-  margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
-  background: rgba(0, 212, 255, 0.06);
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 12px;
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-  line-height: 1.6;
-}
-
-.recorder-hint strong {
-  color: var(--accent-primary);
-}
-
-.recorder-hint em {
-  color: var(--text-primary);
-  font-style: normal;
-  font-weight: 600;
-}
-
 /* ── Recordings section ────────────────────────────────────────────────────── */
 
 .recordings-section {
