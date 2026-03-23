@@ -191,6 +191,36 @@ const ChordProgressions = () => {
               No saved voicing found for {selectedChordName} in the current chord library yet.
             </p>
           )}
+
+          {selectedProgression.strumming?.length > 0 && (
+            <div className="strumming-section">
+              <h4>Suggested Strumming Patterns</h4>
+              <div className="strumming-pattern-list">
+                {selectedProgression.strumming.map((pattern) => (
+                  <div key={pattern.name} className="strumming-pattern">
+                    <div className="strumming-pattern-header">
+                      <span className="strumming-name">{pattern.name}</span>
+                      <span className={`strumming-difficulty diff-${pattern.difficulty.toLowerCase()}`}>
+                        {pattern.difficulty}
+                      </span>
+                      <span className="strumming-tempo">♩ {pattern.tempo}</span>
+                    </div>
+                    <div className="strumming-grid">
+                      {['1', '&', '2', '&', '3', '&', '4', '&'].map((label, i) => (
+                        <div key={i} className="beat-cell">
+                          <span className="beat-label">{label}</span>
+                          <span className={`beat-strum ${pattern.beats[i] ? pattern.beats[i].toLowerCase() : 'empty'}`}>
+                            {pattern.beats[i] === 'D' ? '↓' : pattern.beats[i] === 'U' ? '↑' : '·'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="strumming-tip">💡 {pattern.tip}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </section>
