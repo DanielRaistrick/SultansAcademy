@@ -15,7 +15,7 @@ import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './u
 import './App.css';
 
 function App() {
-  const user = useAuth();
+  const { user, redirectError } = useAuth();
   const [selectedNotes, setSelectedNotes] = useState([]);
   const [detectedChord, setDetectedChord] = useState(null);
   const [activePage, setActivePage] = useState('fretboard');
@@ -98,7 +98,7 @@ function App() {
 
   // Not signed in
   if (user === null) {
-    return <Login />;
+    return <Login redirectError={redirectError} />;
   }
 
   const handleChordSelect = (chord) => {

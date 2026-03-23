@@ -18,7 +18,7 @@ import './Resources.css';
 const emptyForm = { url: '', title: '', description: '' };
 
 const Resources = () => {
-  const user = useAuth();
+  const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

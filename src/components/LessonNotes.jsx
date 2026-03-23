@@ -30,7 +30,7 @@ const parseBullets = (text) =>
     .filter(Boolean);
 
 const LessonNotes = () => {
-  const user = useAuth();
+  const { user } = useAuth();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
