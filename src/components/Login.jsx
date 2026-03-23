@@ -1,21 +1,33 @@
 import { useState } from 'react';
-import { signInWithRedirect } from 'firebase/auth';
+import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import './Login.css';
 
 const Login = ({ redirectError }) => {
   const [signingIn, setSigningIn] = useState(false);
+  const [popupError, setPopupError] = useState(null);
 
   const handleSignIn = async () => {
     setSigningIn(true);
-    // signInWithRedirect navigates away to Google then back — no popup needed
-    await signInWithRedirect(auth, googleProvider);
+    setPopupError(null);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('Sign-in error:', err);
+      setPopupError(err);
+      setSigningIn(false);
+    }
   };
 
-  const errorMessage = redirectError
-    ? redirectError.code === 'auth/unauthorized-domain'
-      ? 'This domain is not authorised in Firebase. Add it under Authentication → Settings → Authorised domains in the Firebase Console.'
-      : `Sign-in failed: ${redirectError.message} (${redirectError.code})`
+  const activeError = redirectError ?? popupError;
+  const errorMessage = activeError
+    ? activeError.code === 'auth/unauthorized-domain'
+      ? `Unauthorised domain. Go to Firebase Console → Authentication → Settings → Authorised domains and add: ${window.location.hostname}`
+      : activeError.code === 'auth/popup-blocked'
+      ? 'Popup was blocked. Please allow popups for this site and try again.'
+      : activeError.code === 'auth/popup-closed-by-user'
+      ? 'Sign-in was cancelled. Please try again.'
+      : `Sign-in failed (${activeError.code}): ${activeError.message}`
     : null;
 
   return (
@@ -40,7 +52,7 @@ const Login = ({ redirectError }) => {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
           )}
-          {signingIn ? 'Redirecting to Google…' : 'Sign in with Google'}
+          {signingIn ? 'Signing in…' : 'Sign in with Google'}
         </button>
       </div>
     </div>
