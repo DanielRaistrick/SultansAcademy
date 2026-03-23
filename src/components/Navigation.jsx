@@ -32,6 +32,13 @@ const Navigation = ({ activePage, onPageChange }) => {
         <span className="nav-icon">📋</span>
         <span className="nav-label">Lesson Notes</span>
       </button>
+      <button
+        className={`nav-button ${activePage === 'recorder' ? 'active' : ''}`}
+        onClick={() => onPageChange('recorder')}
+      >
+        <span className="nav-icon">🎙️</span>
+        <span className="nav-label">Recorder</span>
+      </button>
     </nav>
   );
 };

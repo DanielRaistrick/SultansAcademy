@@ -11,6 +11,7 @@ import Navigation from './components/Navigation';
 import Resources from './components/Resources';
 import LessonNotes from './components/LessonNotes';
 import ChordProgressions from './components/ChordProgressions';
+import Recorder from './components/Recorder';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
 import './App.css';
 
@@ -240,6 +241,8 @@ function App() {
           <ChordProgressions />
         ) : activePage === 'resources' ? (
           <Resources />
+        ) : activePage === 'recorder' ? (
+          <Recorder />
         ) : (
           <LessonNotes />
         )}
