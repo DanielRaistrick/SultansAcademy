@@ -33,6 +33,7 @@ const LessonNotes = () => {
   const { user } = useAuth();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [expandedId, setExpandedId] = useState(null);
@@ -47,12 +48,19 @@ const LessonNotes = () => {
       where('userId', '==', user.uid),
       orderBy('date', 'desc')
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setNotes(
-        snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
-      );
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setNotes(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error('LessonNotes snapshot error:', err);
+        setLoading(false);
+        setError(err.message || 'Failed to load lesson notes.');
+      }
+    );
     return unsubscribe;
   }, [user]);
 
@@ -238,6 +246,15 @@ const LessonNotes = () => {
         <div className="notes-empty">
           <span className="notes-empty-icon">⏳</span>
           <p>Loading your lesson notes…</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="notes-empty notes-error">
+          <span className="notes-empty-icon">⚠️</span>
+          <p><strong>Could not load lesson notes.</strong></p>
+          <p className="notes-error-detail">{error}</p>
+          <p className="notes-error-detail">If this keeps happening, the Firestore index may need to be created — check the browser console for a link.</p>
         </div>
       )}
 

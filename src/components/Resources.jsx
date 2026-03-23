@@ -21,6 +21,7 @@ const Resources = () => {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -33,10 +34,19 @@ const Resources = () => {
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setResources(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setResources(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error('Resources snapshot error:', err);
+        setLoading(false);
+        setError(err.message || 'Failed to load resources.');
+      }
+    );
     return unsubscribe;
   }, [user]);
 
@@ -158,6 +168,15 @@ const Resources = () => {
         <div className="resources-empty">
           <span className="resources-empty-icon">⏳</span>
           <p>Loading resources…</p>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="resources-empty resources-error">
+          <span className="resources-empty-icon">⚠️</span>
+          <p><strong>Could not load resources.</strong></p>
+          <p className="resources-error-detail">{error}</p>
+          <p className="resources-error-detail">If this keeps happening, the Firestore index may need to be created — check the browser console for a link.</p>
         </div>
       )}
 
