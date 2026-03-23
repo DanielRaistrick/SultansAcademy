@@ -1,4 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { db } from './firebase';
+import { useAuth } from './context/AuthContext';
+import Login from './components/Login';
+import UserMenu from './components/UserMenu';
 import Fretboard from './components/Fretboard';
 import ChordPicker from './components/ChordPicker';
 import ScalePicker from './components/ScalePicker';
@@ -10,10 +15,33 @@ import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './u
 import './App.css';
 
 function App() {
+  const user = useAuth();
   const [selectedNotes, setSelectedNotes] = useState([]);
   const [detectedChord, setDetectedChord] = useState(null);
   const [activePage, setActivePage] = useState('fretboard');
   const [scaleNotes, setScaleNotes] = useState([]);
+
+  // One-time migration: claim any documents that pre-date auth
+  useEffect(() => {
+    if (!user) return;
+    const migrationKey = `sultans_migrated_${user.uid}`;
+    if (localStorage.getItem(migrationKey)) return;
+
+    const migrate = async () => {
+      for (const col of ['resources', 'lessonNotes']) {
+        const snapshot = await getDocs(collection(db, col));
+        const orphans = snapshot.docs.filter((d) => !d.data().userId);
+        if (orphans.length > 0) {
+          const batch = writeBatch(db);
+          orphans.forEach((d) => batch.update(d.ref, { userId: user.uid }));
+          await batch.commit();
+        }
+      }
+      localStorage.setItem(migrationKey, 'true');
+    };
+
+    migrate().catch(console.error);
+  }, [user]);
 
   const handleScaleSelect = (notes) => {
     setScaleNotes(notes ?? []);
@@ -57,6 +85,22 @@ function App() {
     setDetectedChord(null);
   };
 
+  // Still resolving Firebase auth state
+  if (user === undefined) {
+    return (
+      <div className="app">
+        <div className="auth-loading">
+          <div className="auth-loading-spinner" />
+        </div>
+      </div>
+    );
+  }
+
+  // Not signed in
+  if (user === null) {
+    return <Login />;
+  }
+
   const handleChordSelect = (chord) => {
     if (!chord) {
       // Clear selection
@@ -83,8 +127,11 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🎸 Guitar Learning Studio</h1>
-        <p className="subtitle">Interactive Fretboard Explorer</p>
+        <div className="app-header-title">
+          <h1>Guitar Learning Studio</h1>
+          <p className="subtitle">Interactive Fretboard Explorer</p>
+        </div>
+        <UserMenu user={user} />
       </header>
 
       <Navigation activePage={activePage} onPageChange={setActivePage} />

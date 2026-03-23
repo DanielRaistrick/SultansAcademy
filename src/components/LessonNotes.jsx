@@ -8,8 +8,10 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import { sanitizeText } from '../utils/sanitize';
 import './LessonNotes.css';
 
@@ -28,6 +30,7 @@ const parseBullets = (text) =>
     .filter(Boolean);
 
 const LessonNotes = () => {
+  const user = useAuth();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -38,7 +41,12 @@ const LessonNotes = () => {
 
   // Real-time listener — updates automatically on any device
   useEffect(() => {
-    const q = query(collection(db, 'lessonNotes'), orderBy('date', 'desc'));
+    if (!user) return;
+    const q = query(
+      collection(db, 'lessonNotes'),
+      where('userId', '==', user.uid),
+      orderBy('date', 'desc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setNotes(
         snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -46,7 +54,7 @@ const LessonNotes = () => {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [user]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -58,6 +66,7 @@ const LessonNotes = () => {
 
     setSaving(true);
     const data = {
+      userId: user.uid,
       date: sanitizeText(form.date, 20),
       toWorkOn: parseBullets(form.toWorkOn),
       goals: {

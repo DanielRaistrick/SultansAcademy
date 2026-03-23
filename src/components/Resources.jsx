@@ -7,15 +7,18 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import { sanitizeText, sanitizeUrl, extractYouTubeId } from '../utils/sanitize';
 import './Resources.css';
 
 const emptyForm = { url: '', title: '', description: '' };
 
 const Resources = () => {
+  const user = useAuth();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -24,13 +27,18 @@ const Resources = () => {
   const [urlError, setUrlError] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, 'resources'), orderBy('createdAt', 'desc'));
+    if (!user) return;
+    const q = query(
+      collection(db, 'resources'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setResources(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [user]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -47,6 +55,7 @@ const Resources = () => {
     setSaving(true);
     const youtubeId = extractYouTubeId(cleanUrl);
     const data = {
+      userId: user.uid,
       url: cleanUrl,
       title: sanitizeText(form.title, 200) || 'Untitled',
       description: sanitizeText(form.description, 500),
