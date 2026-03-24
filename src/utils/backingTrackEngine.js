@@ -109,10 +109,11 @@ export const STYLES = {
 };
 
 // ─── Engine state ──────────────────────────────────────────────────────────────
-// _preloadedPlayers persists across play/stop cycles (loaded once via loadDrumSamples).
-// Synth nodes are created fresh on each play and destroyed on stop.
 
 let _preloadedPlayers = null;  // Tone.Players — null means use synth fallback
+let _samplesLoadPromise = null; // one-time Promise<boolean>
+let _samplesLoaded = false;
+let _pendingUrls = null;        // stashed until Tone.start() is called
 let _kickSynth = null;
 let _snareSynth = null;
 let _hihatSynth = null;
@@ -128,39 +129,64 @@ let _currentChordIdx = 0;
 // ─── Sample loading ────────────────────────────────────────────────────────────
 
 /**
- * Pre-load drum samples from the given URL map.
- * Should be called once on page load; resolves true on success, false on failure.
- * If it fails the engine automatically uses synthesis instead.
- *
- * @param {{ kick: string, snare: string, hihat: string }} urls
- * @returns {Promise<boolean>}
+ * Call this from the component to register the sample URLs.
+ * Actual decoding happens inside startBackingTrack(), after Tone.start() resumes
+ * the AudioContext — this avoids silent failures from a suspended context.
+ * Returns a Promise<boolean> that resolves when loading is complete.
  */
-export const loadDrumSamples = async (urls) => {
-  try {
-    try { _preloadedPlayers?.dispose(); } catch (_) {}
-    _preloadedPlayers = null;
+export const loadDrumSamples = (urls) => {
+  _pendingUrls = urls;
+  // Return an already-resolved-ish promise so the component can await it across
+  // multiple calls. The real promise is set in _triggerLoad().
+  return new Promise((resolve) => {
+    // Resolved inside _triggerLoad, or immediately if already done
+    const poll = () => {
+      if (_samplesLoadPromise) {
+        _samplesLoadPromise.then(resolve);
+      } else {
+        setTimeout(poll, 50);
+      }
+    };
+    poll();
+  });
+};
 
-    const players = new Tone.Players(urls);
+/**
+ * Actually create and load Tone.Players — called inside startBackingTrack()
+ * after Tone.start() so the AudioContext is guaranteed to be running.
+ */
+const _triggerLoad = () => {
+  if (_samplesLoadPromise) return; // already loading or loaded
+  if (!_pendingUrls) return;
 
-    await Promise.race([
-      Tone.loaded(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 15_000),
-      ),
-    ]);
+  const urls = _pendingUrls;
 
-    _preloadedPlayers = players;
-    return true;
-  } catch (err) {
-    console.warn('[BackingTrack] Sample loading failed — using synthesis:', err.message);
-    try { _preloadedPlayers?.dispose(); } catch (_) {}
-    _preloadedPlayers = null;
-    return false;
-  }
+  _samplesLoadPromise = new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      console.warn('[BackingTrack] Sample load timeout — using synthesis');
+      _preloadedPlayers = null;
+      resolve(false);
+    }, 15_000);
+
+    try {
+      // Use the onload callback — the CORRECT way to know when Tone.Players is ready.
+      // Tone.loaded() (global) can resolve early before the Players registers buffers.
+      const players = new Tone.Players(urls, () => {
+        clearTimeout(timer);
+        _preloadedPlayers = players;
+        _samplesLoaded = true;
+        resolve(true);
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      console.warn('[BackingTrack] Tone.Players creation failed:', err.message);
+      resolve(false);
+    }
+  });
 };
 
 /** Returns true when real drum samples are loaded and ready. */
-export const usingSamples = () => _preloadedPlayers !== null;
+export const usingSamples = () => _samplesLoaded;
 
 // ─── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -249,6 +275,18 @@ const _buildAudio = () => {
  */
 export const startBackingTrack = async ({ chords, style, bpm, volumes, muted, onChordChange }) => {
   await Tone.start();
+
+  // Trigger sample loading NOW (AudioContext is running) then wait up to 10s.
+  // On first call this starts the load; on subsequent calls _samplesLoadPromise
+  // is already set so _triggerLoad() is a no-op.
+  _triggerLoad();
+  if (_samplesLoadPromise && !_samplesLoaded) {
+    await Promise.race([
+      _samplesLoadPromise,
+      new Promise((r) => setTimeout(r, 10_000)),
+    ]);
+  }
+
   _disposeCurrent();
 
   if (!chords?.length) return;

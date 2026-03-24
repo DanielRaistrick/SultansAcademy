@@ -7,6 +7,7 @@ import {
   setTrackVolume,
   setLiveBpm,
   loadDrumSamples,
+  usingSamples,
 } from '../utils/backingTrackEngine';
 import { DRUM_URLS } from '../utils/drumSampleUrls';
 import './BackingTrack.css';
@@ -51,10 +52,10 @@ const BackingTrack = () => {
   const [currentChordIdx, setCurrentChordIdx] = useState(-1);
   const [volumes, setVolumes] = useState({ drums: 80, bass: 75, pad: 55 });
   const [muted, setMuted]     = useState({ drums: false, bass: false, pad: false });
-  // 'loading' | 'ready' | 'synth'
-  const [sampleStatus, setSampleStatus] = useState('loading');
+  // 'idle' | 'loading' | 'ready' | 'synth'
+  const [sampleStatus, setSampleStatus] = useState('idle');
 
-  // Load drum samples once on mount
+  // Register the sample URLs on mount (actual decoding happens on first Play press)
   useEffect(() => {
     loadDrumSamples(DRUM_URLS)
       .then((ok) => setSampleStatus(ok ? 'ready' : 'synth'))
@@ -105,6 +106,7 @@ const BackingTrack = () => {
       setIsPlaying(false);
       setCurrentChordIdx(-1);
     } else {
+      if (sampleStatus === 'idle') setSampleStatus('loading');
       await startBackingTrack({
         chords,
         style: selectedStyle,
@@ -113,6 +115,8 @@ const BackingTrack = () => {
         muted,
         onChordChange: setCurrentChordIdx,
       });
+      // Update badge now that we know whether samples loaded
+      setSampleStatus(usingSamples() ? 'ready' : 'synth');
       setIsPlaying(true);
     }
   };
@@ -220,7 +224,8 @@ const BackingTrack = () => {
           badge={
             sampleStatus === 'loading' ? { text: 'loading…', cls: 'loading' } :
             sampleStatus === 'ready'   ? { text: '◎ HD', cls: 'ready' } :
-                                        { text: '◦ Synth', cls: 'synth' }
+            sampleStatus === 'synth'   ? { text: '◦ Synth', cls: 'synth' } :
+                                        null
           }
           pct={volumes.drums} muted={muted.drums}
           onVolume={(v) => handleVolumeChange('drums', v)}
