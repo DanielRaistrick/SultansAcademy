@@ -1,34 +1,28 @@
 // ── Drum sample URL configuration ────────────────────────────────────────────
 //
-// By default the app loads open-source samples from the Tone.js public CDN.
-// No setup is required for this to work.
+// Samples live in /public/drums/ and are served as static assets alongside the
+// app — no Firebase Storage, no external CDN, no cost.
 //
-// For your own copy (better reliability, zero third-party dependency) upload the
-// samples once to your Firebase Storage bucket by running:
-//   node scripts/uploadDrumSamples.js
-//
-// Once uploaded, the VITE_FIREBASE_STORAGE_BUCKET env var (already present in your
-// .env) makes the app automatically prefer Firebase Storage over the CDN.
+// Firebase Storage is still supported as an override: if VITE_FIREBASE_STORAGE_BUCKET
+// is set AND samples have been uploaded, the app will prefer Firebase URLs instead.
+// Run  node scripts/uploadDrumSamples.js  to upload (requires Firebase Blaze plan).
 // ─────────────────────────────────────────────────────────────────────────────
-
-const CDN_BASE = 'https://tonejs.github.io/audio/drum-samples/CR78';
 
 const BUCKET = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
 
-// Firebase Storage CDN path — no token required for publicly readable files.
-// firebasestorage.googleapis.com always includes CORS headers.
 const fbUrl = (file) =>
   BUCKET
     ? `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/drum-samples%2F${file}?alt=media`
     : null;
 
-const url = (file) => fbUrl(file) ?? `${CDN_BASE}/${file}`;
+// Default: local static assets in /public/drums/ (served with the app, always available)
+const url = (file) => fbUrl(file) ?? `/drums/${file}`;
 
 export const DRUM_URLS = {
   kick:  url('kick.mp3'),
   snare: url('snare.mp3'),
-  hihat: url('hihat_close.mp3'),
+  hihat: url('hihat.mp3'),
 };
 
-/** 'firebase' | 'cdn' — which source the URLs point at */
-export const drumSource = BUCKET ? 'firebase' : 'cdn';
+/** 'firebase' | 'local' — which source the URLs point at */
+export const drumSource = BUCKET ? 'firebase' : 'local';

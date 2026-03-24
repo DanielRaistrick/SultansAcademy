@@ -36,14 +36,19 @@
  */
 
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-
-// Load .env / .env.local so VITE_FIREBASE_STORAGE_BUCKET is available
-import 'dotenv/config';
+import dotenv from 'dotenv';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env and .env.local so VITE_FIREBASE_STORAGE_BUCKET is available
+// (Vite projects store secrets in .env.local, so load both)
+for (const f of ['.env', '.env.local']) {
+  const abs = join(__dirname, '..', f);
+  if (existsSync(abs)) dotenv.config({ path: abs });
+}
 
 // ── Load service account ──────────────────────────────────────────────────────
 const keyPath = join(__dirname, '../serviceAccountKey.json');
@@ -58,8 +63,12 @@ try {
 }
 
 const storageBucket =
-  process.env.VITE_FIREBASE_STORAGE_BUCKET ??
-  `${serviceAccount.project_id}.appspot.com`;
+  process.env.VITE_FIREBASE_STORAGE_BUCKET ||
+  // Newer Firebase projects use .firebasestorage.app; legacy projects use .appspot.com
+  `${serviceAccount.project_id}.firebasestorage.app`;
+
+console.log(`\n   Resolved bucket: ${storageBucket}`);
+console.log('   (If this is wrong, set VITE_FIREBASE_STORAGE_BUCKET in .env.local)');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -68,14 +77,30 @@ admin.initializeApp({
 
 const bucket = admin.storage().bucket();
 
+// ── Ensure bucket exists ───────────────────────────────────────────────────────
+const [bucketExists] = await bucket.exists();
+if (!bucketExists) {
+  console.log(`\n   Bucket not found — creating gs://${storageBucket} ...`);
+  try {
+    await bucket.create({ location: 'US' });
+    console.log('   ✓  Bucket created.\n');
+  } catch (err) {
+    console.error(`\n❌  Could not create bucket: ${err.message}`);
+    console.error('\n   → Go to Firebase Console → Build → Storage → Get Started');
+    console.error('     This initialises your Storage bucket. Then re-run this script.\n');
+    await admin.app().delete();
+    process.exit(1);
+  }
+}
+
 // ── Sample sources ────────────────────────────────────────────────────────────
 // Tone.js hosts these as part of their open-source audio examples (CC licence).
 const CDN = 'https://tonejs.github.io/audio/drum-samples/CR78';
 
 const SAMPLES = {
-  'kick.mp3':        `${CDN}/kick.mp3`,
-  'snare.mp3':       `${CDN}/snare.mp3`,
-  'hihat_close.mp3': `${CDN}/hihat_close.mp3`,
+  'kick.mp3':  `${CDN}/kick.mp3`,
+  'snare.mp3': `${CDN}/snare.mp3`,
+  'hihat.mp3': `${CDN}/hihat.mp3`,
 };
 
 // ── Upload ────────────────────────────────────────────────────────────────────

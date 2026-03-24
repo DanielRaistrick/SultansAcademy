@@ -8,7 +8,7 @@ import {
   setLiveBpm,
   loadDrumSamples,
 } from '../utils/backingTrackEngine';
-import { DRUM_URLS, drumSource } from '../utils/drumSampleUrls';
+import { DRUM_URLS } from '../utils/drumSampleUrls';
 import './BackingTrack.css';
 
 const TRACKS = ['drums', 'bass', 'pad'];
@@ -219,7 +219,7 @@ const BackingTrack = () => {
           icon="🥁"
           badge={
             sampleStatus === 'loading' ? { text: 'loading…', cls: 'loading' } :
-            sampleStatus === 'ready'   ? { text: drumSource === 'firebase' ? '◎ Firebase' : '◎ HD', cls: 'ready' } :
+            sampleStatus === 'ready'   ? { text: '◎ HD', cls: 'ready' } :
                                         { text: '◦ Synth', cls: 'synth' }
           }
           pct={volumes.drums} muted={muted.drums}
