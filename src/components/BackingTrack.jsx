@@ -6,12 +6,14 @@ import {
   stopBackingTrack,
   setTrackVolume,
   setLiveBpm,
+  loadDrumSamples,
 } from '../utils/backingTrackEngine';
+import { DRUM_URLS, drumSource } from '../utils/drumSampleUrls';
 import './BackingTrack.css';
 
 const TRACKS = ['drums', 'bass', 'pad'];
 
-const TrackControl = ({ label, icon, pct, muted, onVolume, onMute }) => (
+const TrackControl = ({ label, icon, pct, muted, onVolume, onMute, badge }) => (
   <div className={`bt-track ${muted ? 'muted' : ''}`}>
     <button
       className={`bt-mute-btn ${muted ? 'active' : ''}`}
@@ -20,7 +22,14 @@ const TrackControl = ({ label, icon, pct, muted, onVolume, onMute }) => (
     >
       {muted ? '🔇' : '🔊'}
     </button>
-    <span className="bt-track-label">{icon} {label}</span>
+    <span className="bt-track-label">
+      {icon} {label}
+      {badge && (
+        <span className={`bt-sample-badge bt-sample-badge--${badge.cls}`}>
+          {badge.text}
+        </span>
+      )}
+    </span>
     <input
       type="range"
       className="bt-slider"
@@ -42,6 +51,15 @@ const BackingTrack = () => {
   const [currentChordIdx, setCurrentChordIdx] = useState(-1);
   const [volumes, setVolumes] = useState({ drums: 80, bass: 75, pad: 55 });
   const [muted, setMuted]     = useState({ drums: false, bass: false, pad: false });
+  // 'loading' | 'ready' | 'synth'
+  const [sampleStatus, setSampleStatus] = useState('loading');
+
+  // Load drum samples once on mount
+  useEffect(() => {
+    loadDrumSamples(DRUM_URLS)
+      .then((ok) => setSampleStatus(ok ? 'ready' : 'synth'))
+      .catch(() => setSampleStatus('synth'));
+  }, []);
 
   // When style changes during idle, update default BPM
   const prevStyle = useRef(selectedStyle);
@@ -197,7 +215,13 @@ const BackingTrack = () => {
       {/* Mixer */}
       <div className="bt-mixer">
         <TrackControl
-          label="Drums"   icon="🥁"
+          label="Drums"
+          icon="🥁"
+          badge={
+            sampleStatus === 'loading' ? { text: 'loading…', cls: 'loading' } :
+            sampleStatus === 'ready'   ? { text: drumSource === 'firebase' ? '◎ Firebase' : '◎ HD', cls: 'ready' } :
+                                        { text: '◦ Synth', cls: 'synth' }
+          }
           pct={volumes.drums} muted={muted.drums}
           onVolume={(v) => handleVolumeChange('drums', v)}
           onMute={() => handleMuteToggle('drums')}

@@ -109,7 +109,10 @@ export const STYLES = {
 };
 
 // ─── Engine state ──────────────────────────────────────────────────────────────
+// _preloadedPlayers persists across play/stop cycles (loaded once via loadDrumSamples).
+// Synth nodes are created fresh on each play and destroyed on stop.
 
+let _preloadedPlayers = null;  // Tone.Players — null means use synth fallback
 let _kickSynth = null;
 let _snareSynth = null;
 let _hihatSynth = null;
@@ -121,6 +124,43 @@ let _padGain = null;
 let _drumSeq = null;
 let _chordRepeatId = null;
 let _currentChordIdx = 0;
+
+// ─── Sample loading ────────────────────────────────────────────────────────────
+
+/**
+ * Pre-load drum samples from the given URL map.
+ * Should be called once on page load; resolves true on success, false on failure.
+ * If it fails the engine automatically uses synthesis instead.
+ *
+ * @param {{ kick: string, snare: string, hihat: string }} urls
+ * @returns {Promise<boolean>}
+ */
+export const loadDrumSamples = async (urls) => {
+  try {
+    try { _preloadedPlayers?.dispose(); } catch (_) {}
+    _preloadedPlayers = null;
+
+    const players = new Tone.Players(urls);
+
+    await Promise.race([
+      Tone.loaded(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15_000),
+      ),
+    ]);
+
+    _preloadedPlayers = players;
+    return true;
+  } catch (err) {
+    console.warn('[BackingTrack] Sample loading failed — using synthesis:', err.message);
+    try { _preloadedPlayers?.dispose(); } catch (_) {}
+    _preloadedPlayers = null;
+    return false;
+  }
+};
+
+/** Returns true when real drum samples are loaded and ready. */
+export const usingSamples = () => _preloadedPlayers !== null;
 
 // ─── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -134,6 +174,12 @@ const _disposeCurrent = () => {
     _chordRepeatId = null;
   }
 
+  // Disconnect players from the gain node but do NOT dispose them — they are
+  // reused across play/stop cycles.
+  if (_preloadedPlayers && _drumGain) {
+    try { _preloadedPlayers.disconnect(_drumGain); } catch (_) {}
+  }
+
   for (const node of [_kickSynth, _snareSynth, _hihatSynth, _bassSynth, _padSynth, _drumGain, _bassGain, _padGain]) {
     try { node?.dispose(); } catch (_) { /* already disposed */ }
   }
@@ -143,30 +189,36 @@ const _disposeCurrent = () => {
   _currentChordIdx = 0;
 };
 
-const _buildSynths = () => {
+const _buildAudio = () => {
   _drumGain = new Tone.Gain(1).toDestination();
   _bassGain = new Tone.Gain(0.9).toDestination();
   _padGain  = new Tone.Gain(0.35).toDestination();
 
-  _kickSynth = new Tone.MembraneSynth({
-    pitchDecay: 0.05,
-    octaves: 6,
-    envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 },
-  }).connect(_drumGain);
+  if (_preloadedPlayers) {
+    // Route pre-loaded sample players through the drum gain
+    _preloadedPlayers.connect(_drumGain);
+  } else {
+    // Synthesis fallback — used when samples haven't loaded
+    _kickSynth = new Tone.MembraneSynth({
+      pitchDecay: 0.05,
+      octaves: 6,
+      envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 },
+    }).connect(_drumGain);
 
-  _snareSynth = new Tone.NoiseSynth({
-    noise: { type: 'white' },
-    envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.05 },
-  }).connect(_drumGain);
+    _snareSynth = new Tone.NoiseSynth({
+      noise: { type: 'white' },
+      envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.05 },
+    }).connect(_drumGain);
 
-  _hihatSynth = new Tone.MetalSynth({
-    frequency: 400,
-    envelope: { attack: 0.001, decay: 0.05, release: 0.01 },
-    harmonicity: 5.1,
-    modulationIndex: 32,
-    resonance: 4000,
-    octaves: 1.5,
-  }).connect(_drumGain);
+    _hihatSynth = new Tone.MetalSynth({
+      frequency: 400,
+      envelope: { attack: 0.001, decay: 0.05, release: 0.01 },
+      harmonicity: 5.1,
+      modulationIndex: 32,
+      resonance: 4000,
+      octaves: 1.5,
+    }).connect(_drumGain);
+  }
 
   _bassSynth = new Tone.MonoSynth({
     oscillator: { type: 'sawtooth' },
@@ -202,7 +254,7 @@ export const startBackingTrack = async ({ chords, style, bpm, volumes, muted, on
   if (!chords?.length) return;
 
   const styleDef = STYLES[style] ?? STYLES.rock;
-  _buildSynths();
+  _buildAudio();
 
   // Apply initial volumes/mutes
   _applyVolume('drums', volumes.drums, muted.drums);
@@ -217,9 +269,17 @@ export const startBackingTrack = async ({ chords, style, bpm, volumes, muted, on
   // ── Drum sequence (16 steps × 16th notes) ──────────────────────
   _drumSeq = new Tone.Sequence(
     (time, step) => {
-      if (styleDef.kick[step])  _kickSynth.triggerAttackRelease('C1', '8n', time);
-      if (styleDef.snare[step]) _snareSynth.triggerAttackRelease('8n', time);
-      if (styleDef.hihat[step]) _hihatSynth.triggerAttackRelease('16n', time);
+      if (_preloadedPlayers) {
+        // Real samples — each player is a one-shot triggered at the audio time
+        if (styleDef.kick[step])  _preloadedPlayers.player('kick').start(time);
+        if (styleDef.snare[step]) _preloadedPlayers.player('snare').start(time);
+        if (styleDef.hihat[step]) _preloadedPlayers.player('hihat').start(time);
+      } else {
+        // Synthesis fallback
+        if (styleDef.kick[step])  _kickSynth.triggerAttackRelease('C1', '8n', time);
+        if (styleDef.snare[step]) _snareSynth.triggerAttackRelease('8n', time);
+        if (styleDef.hihat[step]) _hihatSynth.triggerAttackRelease('16n', time);
+      }
     },
     Array.from({ length: 16 }, (_, i) => i),
     '16n',

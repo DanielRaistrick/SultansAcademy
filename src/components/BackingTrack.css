@@ -244,6 +244,44 @@
   font-size: 0.9rem;
   font-weight: 600;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ── Sample quality badge ─────────────────────────────────── */
+.bt-sample-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.bt-sample-badge--loading {
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  animation: bt-spin 1.4s linear infinite;
+}
+
+.bt-sample-badge--ready {
+  background: rgba(0, 212, 100, 0.15);
+  color: #00d464;
+  border: 1px solid rgba(0, 212, 100, 0.35);
+}
+
+.bt-sample-badge--synth {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+@keyframes bt-spin {
+  from { opacity: 1; }
+  50%  { opacity: 0.35; }
+  to   { opacity: 1; }
 }
 
 .bt-slider {
