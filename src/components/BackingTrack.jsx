@@ -8,6 +8,9 @@ import {
   setLiveBpm,
   loadDrumSamples,
   usingSamples,
+  initInstrumentSamplers,
+  usingRealBass,
+  usingRealPad,
 } from '../utils/backingTrackEngine';
 import { DRUM_URLS } from '../utils/drumSampleUrls';
 import './BackingTrack.css';
@@ -54,12 +57,24 @@ const BackingTrack = () => {
   const [muted, setMuted]     = useState({ drums: false, bass: false, pad: false });
   // 'idle' | 'loading' | 'ready' | 'synth'
   const [sampleStatus, setSampleStatus] = useState('idle');
+  const [bassStatus, setBassStatus] = useState('loading');
+  const [padStatus,  setPadStatus]  = useState('loading');
 
-  // Register the sample URLs on mount (actual decoding happens on first Play press)
+  // Register drum URLs + kick off instrument sampler pre-loading on mount
   useEffect(() => {
     loadDrumSamples(DRUM_URLS)
       .then((ok) => setSampleStatus(ok ? 'ready' : 'synth'))
       .catch(() => setSampleStatus('synth'));
+
+    initInstrumentSamplers();
+
+    // Poll until both real-instrument samplers are loaded
+    const poll = setInterval(() => {
+      if (usingRealBass()) setBassStatus('ready');
+      if (usingRealPad())  setPadStatus('ready');
+      if (usingRealBass() && usingRealPad()) clearInterval(poll);
+    }, 400);
+    return () => clearInterval(poll);
   }, []);
 
   // When style changes during idle, update default BPM
@@ -232,13 +247,23 @@ const BackingTrack = () => {
           onMute={() => handleMuteToggle('drums')}
         />
         <TrackControl
-          label="Bass"    icon="🎸"
+          label="Bass"  icon="🎸"
+          badge={
+            bassStatus === 'ready'
+              ? { text: '◎ Real bass', cls: 'ready' }
+              : { text: '⏳ loading…', cls: 'loading' }
+          }
           pct={volumes.bass}  muted={muted.bass}
           onVolume={(v) => handleVolumeChange('bass', v)}
           onMute={() => handleMuteToggle('bass')}
         />
         <TrackControl
-          label="Pads"    icon="🎹"
+          label="Piano" icon="🎹"
+          badge={
+            padStatus === 'ready'
+              ? { text: '◎ Grand Piano', cls: 'ready' }
+              : { text: '⏳ loading…', cls: 'loading' }
+          }
           pct={volumes.pad}   muted={muted.pad}
           onVolume={(v) => handleVolumeChange('pad', v)}
           onMute={() => handleMuteToggle('pad')}
