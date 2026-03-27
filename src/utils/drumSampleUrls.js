@@ -8,3 +8,7 @@ export const DRUM_URLS = {
   snare: `${base}/drums/snare.mp3`,
   hihat: `${base}/drums/hihat.mp3`,
 };
+
+// Log the resolved URLs to the console so you can verify them in DevTools
+console.log('[DrumSamples] BASE_URL =', import.meta.env.BASE_URL);
+console.log('[DrumSamples] Resolved URLs:', DRUM_URLS);

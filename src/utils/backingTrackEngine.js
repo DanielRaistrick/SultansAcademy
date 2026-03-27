@@ -49,10 +49,14 @@ let _transportStarted = false;
 let _loadResolvers = [];
 
 const _fetchBuffer = async (url) => {
+  console.log('[DrumSamples] Fetching:', url);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
   const arr = await res.arrayBuffer();
-  return Tone.getContext().rawContext.decodeAudioData(arr);
+  console.log('[DrumSamples] Fetched OK:', url, `(${arr.byteLength} bytes)`);
+  const buf = await Tone.getContext().rawContext.decodeAudioData(arr);
+  console.log('[DrumSamples] Decoded OK:', url, `(${buf.duration.toFixed(3)}s)`);
+  return buf;
 };
 
 export const loadDrumSamples = (urls) => {
@@ -77,9 +81,10 @@ const _doLoad = async (urls) => {
     ]);
     _kickBuf = k; _snareBuf = s; _hihatBuf = h;
     _samplesLoaded = true;
+    console.log('[DrumSamples] ✅ All samples loaded and decoded — using REAL drum sounds');
     _loadResolvers.forEach((r) => r(true));
   } catch (err) {
-    console.warn("[BackingTrack] Sample load failed:", err.message);
+    console.error('[DrumSamples] ❌ Sample load FAILED — falling back to synthesis. Error:', err.message);
     _loadResolvers.forEach((r) => r(false));
   } finally {
     _loadResolvers = []; _samplesLoading = false; _pendingUrls = null;
@@ -88,12 +93,19 @@ const _doLoad = async (urls) => {
 
 export const usingSamples = () => _samplesLoaded;
 
+let _fireCount = 0;
 const _fireBuffer = (buf, time) => {
   if (!buf || !_drumGain) return;
   const src = Tone.getContext().rawContext.createBufferSource();
   src.buffer = buf;
-  src.connect(_drumGain.input);
+  // Connect to the underlying GainNode — works in Tone.js v15
+  const gainNode = _drumGain.input ?? _drumGain._gainNode ?? _drumGain;
+  src.connect(gainNode);
   src.start(time);
+  if (_fireCount < 3) {
+    console.log('[DrumSamples] 🥁 Firing real sample, buffer duration:', buf.duration.toFixed(3) + 's');
+    _fireCount++;
+  }
 };
 
 const _disposeCurrent = () => {
@@ -112,6 +124,7 @@ const _disposeCurrent = () => {
   }
   _bassSynth = _padSynth = _drumGain = _bassGain = _padGain = null;
   _currentChordIdx = 0;
+  _fireCount = 0;
 };
 
 const _buildAudio = () => {
@@ -133,12 +146,14 @@ const _buildAudio = () => {
 export const startBackingTrack = async ({ chords, style, bpm, volumes, muted, onChordChange }) => {
   await Tone.start();
 
+  console.log('[BackingTrack] startBackingTrack — samplesLoaded:', _samplesLoaded, 'samplesLoading:', _samplesLoading, 'pendingUrls:', !!_pendingUrls);
   if (_pendingUrls && !_samplesLoaded && !_samplesLoading) {
     const urlsToLoad = _pendingUrls;
     const loadDone = new Promise((resolve) => _loadResolvers.push(resolve));
     _doLoad(urlsToLoad);
     await Promise.race([loadDone, new Promise((r) => setTimeout(r, 8_000))]);
   }
+  console.log('[BackingTrack] After load wait — samplesLoaded:', _samplesLoaded);
 
   _disposeCurrent();
   if (!chords?.length) return;
