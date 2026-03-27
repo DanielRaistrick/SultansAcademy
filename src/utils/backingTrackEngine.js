@@ -1,376 +1,208 @@
-import * as Tone from 'tone';
-
-// ─── Note utilities ────────────────────────────────────────────────────────────
+﻿import * as Tone from "tone";
 
 const NOTE_SEMITONES = {
-  C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3,
-  E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8,
-  Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
+  C: 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3,
+  E: 4, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8,
+  Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11,
 };
-
-const SHARP_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-const toneNote = (semi, oct) =>
-  `${SHARP_NAMES[((semi % 12) + 12) % 12]}${oct}`;
-
+const SHARP_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const toneNote = (semi, oct) => `${SHARP_NAMES[((semi % 12) + 12) % 12]}${oct}`;
 const parseChordName = (name) => {
   if (!name) return null;
   const m = name.match(/^([A-G][#b]?)(m7|maj7|m|dim7|dim)?/);
-  return m ? { root: m[1], quality: m[2] ?? '' } : null;
+  return m ? { root: m[1], quality: m[2] ?? "" } : null;
 };
-
 const CHORD_INTERVALS = {
-  '':     [0, 4, 7],
-  m:      [0, 3, 7],
-  dim:    [0, 3, 6],
-  m7:     [0, 3, 7, 10],
-  maj7:   [0, 4, 7, 11],
-  dim7:   [0, 3, 6, 9],
+  "":    [0,4,7], m:    [0,3,7], dim:  [0,3,6],
+  m7:   [0,3,7,10], maj7: [0,4,7,11], dim7: [0,3,6,9],
 };
-
 export const chordNotes = (name, octave = 3) => {
   const parsed = parseChordName(name);
   if (!parsed) return [];
   const rootSemi = NOTE_SEMITONES[parsed.root];
   if (rootSemi === undefined) return [];
-  const intervals = CHORD_INTERVALS[parsed.quality] ?? CHORD_INTERVALS[''];
-  return intervals.map((i) => {
-    const total = rootSemi + i;
-    return toneNote(total % 12, octave + Math.floor(total / 12));
-  });
+  const intervals = CHORD_INTERVALS[parsed.quality] ?? CHORD_INTERVALS[""];
+  return intervals.map((i) => { const t = rootSemi + i; return toneNote(t % 12, octave + Math.floor(t / 12)); });
 };
-
 export const chordRoot = (name, octave = 2) => {
   const parsed = parseChordName(name);
-  if (!parsed) return 'C2';
+  if (!parsed) return "C2";
   const rootSemi = NOTE_SEMITONES[parsed.root];
-  if (rootSemi === undefined) return 'C2';
+  if (rootSemi === undefined) return "C2";
   return toneNote(rootSemi, octave);
 };
-
-// ─── Style definitions ──────────────────────────────────────────────────────────
-// Each style has a 16-step (16th-note) drum pattern and bass step positions.
-
 export const STYLES = {
-  rock: {
-    label: '🤘 Rock',
-    defaultBpm: 115,
-    kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-    snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
-    hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
-    bassSteps: [0, 8],
-    padDuration: '1m',
-  },
-  blues: {
-    label: '🎷 Blues',
-    defaultBpm: 88,
-    kick:  [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,0,0],
-    snare: [0,0,0,0, 1,0,0,0, 0,0,0,1, 1,0,0,0],
-    hihat: [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,1],
-    bassSteps: [0, 6, 8, 14],
-    padDuration: '1m',
-  },
-  jazz: {
-    label: '🎺 Jazz',
-    defaultBpm: 140,
-    kick:  [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
-    snare: [0,0,0,0, 1,0,0,1, 0,0,0,0, 1,0,0,0],
-    hihat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0],
-    bassSteps: [0, 4, 8, 12],
-    padDuration: '2n',
-  },
-  funk: {
-    label: '🕺 Funk',
-    defaultBpm: 96,
-    kick:  [1,0,0,0, 1,0,0,1, 0,0,1,0, 0,0,0,0],
-    snare: [0,0,0,0, 1,0,1,0, 0,0,0,0, 1,0,0,1],
-    hihat: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
-    bassSteps: [0, 2, 8, 10],
-    padDuration: '2n',
-  },
-  ballad: {
-    label: '🌙 Ballad',
-    defaultBpm: 68,
-    kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-    snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
-    hihat: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
-    bassSteps: [0, 8],
-    padDuration: '1m',
-  },
-  latin: {
-    label: '💃 Latin',
-    defaultBpm: 110,
-    kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
-    snare: [0,0,1,0, 0,0,0,0, 0,0,1,0, 0,0,0,0],
-    hihat: [1,0,1,0, 1,1,0,1, 0,1,0,0, 1,0,1,0],
-    bassSteps: [0, 3, 8, 11],
-    padDuration: '2n',
-  },
+  rock:   { label: " Rock",   defaultBpm: 115, kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0], hihat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], bassSteps:[0,8],        padDuration:"1m" },
+  blues:  { label: " Blues",  defaultBpm: 88,  kick:[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0], snare:[0,0,0,0,1,0,0,0,0,0,0,1,1,0,0,0], hihat:[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1], bassSteps:[0,6,8,14],   padDuration:"1m" },
+  jazz:   { label: " Jazz",   defaultBpm: 140, kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0], snare:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0], hihat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0], bassSteps:[0,4,8,12],   padDuration:"2n" },
+  funk:   { label: " Funk",   defaultBpm: 96,  kick:[1,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0], snare:[0,0,0,0,1,0,1,0,0,0,0,0,1,0,0,1], hihat:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], bassSteps:[0,2,8,10],   padDuration:"2n" },
+  ballad: { label: " Ballad", defaultBpm: 68,  kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0], hihat:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], bassSteps:[0,8],        padDuration:"1m" },
+  latin:  { label: " Latin",  defaultBpm: 110, kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], snare:[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0], hihat:[1,0,1,0,1,1,0,1,0,1,0,0,1,0,1,0], bassSteps:[0,3,8,11],   padDuration:"2n" },
 };
 
-// ─── Engine state ──────────────────────────────────────────────────────────────
+let _kickBuf = null, _snareBuf = null, _hihatBuf = null;
+let _samplesLoaded = false, _samplesLoading = false, _pendingUrls = null;
+let _bassSynth = null, _padSynth = null;
+let _drumGain = null, _bassGain = null, _padGain = null;
+let _drumSeq = null, _chordRepeatId = null, _currentChordIdx = 0;
+let _transportStarted = false;
+let _loadResolvers = [];
 
-let _preloadedPlayers = null;  // Tone.Players — null means use synth fallback
-let _samplesLoadPromise = null; // one-time Promise<boolean>
-let _samplesLoaded = false;
-let _pendingUrls = null;        // stashed until Tone.start() is called
-let _kickSynth = null;
-let _snareSynth = null;
-let _hihatSynth = null;
-let _bassSynth = null;
-let _padSynth = null;
-let _drumGain = null;
-let _bassGain = null;
-let _padGain = null;
-let _drumSeq = null;
-let _chordRepeatId = null;
-let _currentChordIdx = 0;
+const _fetchBuffer = async (url) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+  const arr = await res.arrayBuffer();
+  return Tone.getContext().rawContext.decodeAudioData(arr);
+};
 
-// ─── Sample loading ────────────────────────────────────────────────────────────
-
-/**
- * Call this from the component to register the sample URLs.
- * Actual decoding happens inside startBackingTrack(), after Tone.start() resumes
- * the AudioContext — this avoids silent failures from a suspended context.
- * Returns a Promise<boolean> that resolves when loading is complete.
- */
 export const loadDrumSamples = (urls) => {
   _pendingUrls = urls;
-  // Return an already-resolved-ish promise so the component can await it across
-  // multiple calls. The real promise is set in _triggerLoad().
   return new Promise((resolve) => {
-    // Resolved inside _triggerLoad, or immediately if already done
-    const poll = () => {
-      if (_samplesLoadPromise) {
-        _samplesLoadPromise.then(resolve);
-      } else {
-        setTimeout(poll, 50);
-      }
+    const check = () => {
+      if (_samplesLoaded) { resolve(true); return; }
+      if (!_samplesLoading && !_pendingUrls) { resolve(false); return; }
+      setTimeout(check, 100);
     };
-    poll();
+    check();
   });
 };
 
-/**
- * Actually create and load Tone.Players — called inside startBackingTrack()
- * after Tone.start() so the AudioContext is guaranteed to be running.
- */
-const _triggerLoad = () => {
-  if (_samplesLoadPromise) return; // already loading or loaded
-  if (!_pendingUrls) return;
-
-  const urls = _pendingUrls;
-
-  _samplesLoadPromise = new Promise((resolve) => {
-    const timer = setTimeout(() => {
-      console.warn('[BackingTrack] Sample load timeout — using synthesis');
-      _preloadedPlayers = null;
-      resolve(false);
-    }, 15_000);
-
-    try {
-      // Use the onload callback — the CORRECT way to know when Tone.Players is ready.
-      // Tone.loaded() (global) can resolve early before the Players registers buffers.
-      const players = new Tone.Players(urls, () => {
-        clearTimeout(timer);
-        _preloadedPlayers = players;
-        _samplesLoaded = true;
-        resolve(true);
-      });
-    } catch (err) {
-      clearTimeout(timer);
-      console.warn('[BackingTrack] Tone.Players creation failed:', err.message);
-      resolve(false);
-    }
-  });
+const _doLoad = async (urls) => {
+  _samplesLoading = true;
+  try {
+    const [k, s, h] = await Promise.all([
+      _fetchBuffer(urls.kick),
+      _fetchBuffer(urls.snare),
+      _fetchBuffer(urls.hihat),
+    ]);
+    _kickBuf = k; _snareBuf = s; _hihatBuf = h;
+    _samplesLoaded = true;
+    _loadResolvers.forEach((r) => r(true));
+  } catch (err) {
+    console.warn("[BackingTrack] Sample load failed:", err.message);
+    _loadResolvers.forEach((r) => r(false));
+  } finally {
+    _loadResolvers = []; _samplesLoading = false; _pendingUrls = null;
+  }
 };
 
-/** Returns true when real drum samples are loaded and ready. */
 export const usingSamples = () => _samplesLoaded;
 
-// ─── Internal helpers ──────────────────────────────────────────────────────────
+const _fireBuffer = (buf, time) => {
+  if (!buf || !_drumGain) return;
+  const src = Tone.getContext().rawContext.createBufferSource();
+  src.buffer = buf;
+  src.connect(_drumGain.input);
+  src.start(time);
+};
 
 const _disposeCurrent = () => {
-  Tone.Transport.stop();
-  Tone.Transport.cancel();
-
-  if (_drumSeq) { _drumSeq.stop(); _drumSeq.dispose(); _drumSeq = null; }
+  if (_transportStarted) {
+    try { Tone.Transport.stop(); } catch (_) {}
+    try { Tone.Transport.cancel(); } catch (_) {}
+    _transportStarted = false;
+  }
+  if (_drumSeq) { try { _drumSeq.dispose(); } catch (_) {} _drumSeq = null; }
   if (_chordRepeatId !== null) {
-    Tone.Transport.clear(_chordRepeatId);
+    try { Tone.Transport.clear(_chordRepeatId); } catch (_) {}
     _chordRepeatId = null;
   }
-
-  // Disconnect players from the gain node but do NOT dispose them — they are
-  // reused across play/stop cycles.
-  if (_preloadedPlayers && _drumGain) {
-    try { _preloadedPlayers.disconnect(_drumGain); } catch (_) {}
+  for (const node of [_bassSynth, _padSynth, _drumGain, _bassGain, _padGain]) {
+    try { node?.dispose(); } catch (_) {}
   }
-
-  for (const node of [_kickSynth, _snareSynth, _hihatSynth, _bassSynth, _padSynth, _drumGain, _bassGain, _padGain]) {
-    try { node?.dispose(); } catch (_) { /* already disposed */ }
-  }
-
-  _kickSynth = _snareSynth = _hihatSynth = _bassSynth = _padSynth = null;
-  _drumGain = _bassGain = _padGain = null;
+  _bassSynth = _padSynth = _drumGain = _bassGain = _padGain = null;
   _currentChordIdx = 0;
 };
 
 const _buildAudio = () => {
   _drumGain = new Tone.Gain(1).toDestination();
-  _bassGain = new Tone.Gain(0.9).toDestination();
-  _padGain  = new Tone.Gain(0.35).toDestination();
-
-  if (_preloadedPlayers) {
-    // Route pre-loaded sample players through the drum gain
-    _preloadedPlayers.connect(_drumGain);
-  } else {
-    // Synthesis fallback — used when samples haven't loaded
-    _kickSynth = new Tone.MembraneSynth({
-      pitchDecay: 0.05,
-      octaves: 6,
-      envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 },
-    }).connect(_drumGain);
-
-    _snareSynth = new Tone.NoiseSynth({
-      noise: { type: 'white' },
-      envelope: { attack: 0.001, decay: 0.14, sustain: 0, release: 0.05 },
-    }).connect(_drumGain);
-
-    _hihatSynth = new Tone.MetalSynth({
-      frequency: 400,
-      envelope: { attack: 0.001, decay: 0.05, release: 0.01 },
-      harmonicity: 5.1,
-      modulationIndex: 32,
-      resonance: 4000,
-      octaves: 1.5,
-    }).connect(_drumGain);
-  }
-
+  _bassGain = new Tone.Gain(0.85).toDestination();
+  _padGain  = new Tone.Gain(0.3).toDestination();
   _bassSynth = new Tone.MonoSynth({
-    oscillator: { type: 'sawtooth' },
-    envelope: { attack: 0.01, decay: 0.15, sustain: 0.6, release: 0.25 },
-    filterEnvelope: {
-      attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2,
-      baseFrequency: 200, octaves: 2.5,
-    },
+    oscillator: { type: "sawtooth" },
+    envelope: { attack: 0.005, decay: 0.2, sustain: 0.5, release: 0.3 },
+    filterEnvelope: { attack: 0.005, decay: 0.15, sustain: 0.4, release: 0.3, baseFrequency: 180, octaves: 3 },
   }).connect(_bassGain);
-
   _padSynth = new Tone.PolySynth(Tone.Synth, {
-    oscillator: { type: 'triangle' },
-    envelope: { attack: 0.35, decay: 0.2, sustain: 0.7, release: 1.8 },
+    oscillator: { type: "fatsawtooth", count: 3, spread: 20 },
+    envelope: { attack: 0.4, decay: 0.3, sustain: 0.6, release: 2.5 },
+    volume: -6,
   }).connect(_padGain);
 };
 
-// ─── Public API ────────────────────────────────────────────────────────────────
-
-/**
- * Start the backing track.
- * @param {object} opts
- * @param {string[]} opts.chords  - chord names in order, e.g. ['C', 'Am', 'F', 'G']
- * @param {string}   opts.style   - key of STYLES
- * @param {number}   opts.bpm
- * @param {object}   opts.volumes - { drums, bass, pad } as 0–100
- * @param {object}   opts.muted   - { drums, bass, pad } booleans
- * @param {function} opts.onChordChange - called with (chordIndex) on each bar start
- */
 export const startBackingTrack = async ({ chords, style, bpm, volumes, muted, onChordChange }) => {
   await Tone.start();
 
-  // Trigger sample loading NOW (AudioContext is running) then wait up to 10s.
-  // On first call this starts the load; on subsequent calls _samplesLoadPromise
-  // is already set so _triggerLoad() is a no-op.
-  _triggerLoad();
-  if (_samplesLoadPromise && !_samplesLoaded) {
-    await Promise.race([
-      _samplesLoadPromise,
-      new Promise((r) => setTimeout(r, 10_000)),
-    ]);
+  if (_pendingUrls && !_samplesLoaded && !_samplesLoading) {
+    const urlsToLoad = _pendingUrls;
+    const loadDone = new Promise((resolve) => _loadResolvers.push(resolve));
+    _doLoad(urlsToLoad);
+    await Promise.race([loadDone, new Promise((r) => setTimeout(r, 8_000))]);
   }
 
   _disposeCurrent();
-
   if (!chords?.length) return;
 
   const styleDef = STYLES[style] ?? STYLES.rock;
   _buildAudio();
-
-  // Apply initial volumes/mutes
-  _applyVolume('drums', volumes.drums, muted.drums);
-  _applyVolume('bass',  volumes.bass,  muted.bass);
-  _applyVolume('pad',   volumes.pad,   muted.pad);
+  _applyVolume("drums", volumes.drums, muted.drums);
+  _applyVolume("bass",  volumes.bass,  muted.bass);
+  _applyVolume("pad",   volumes.pad,   muted.pad);
 
   Tone.Transport.bpm.value = bpm;
+  const sixteenth = Tone.Time("16n").toSeconds();
 
-  // 16th-note duration in seconds (computed after bpm is set)
-  const sixteenth = Tone.Time('16n').toSeconds();
-
-  // ── Drum sequence (16 steps × 16th notes) ──────────────────────
   _drumSeq = new Tone.Sequence(
     (time, step) => {
-      if (_preloadedPlayers) {
-        // Real samples — each player is a one-shot triggered at the audio time
-        if (styleDef.kick[step])  _preloadedPlayers.player('kick').start(time);
-        if (styleDef.snare[step]) _preloadedPlayers.player('snare').start(time);
-        if (styleDef.hihat[step]) _preloadedPlayers.player('hihat').start(time);
+      if (_samplesLoaded) {
+        if (styleDef.kick[step])  _fireBuffer(_kickBuf,  time);
+        if (styleDef.snare[step]) _fireBuffer(_snareBuf, time);
+        if (styleDef.hihat[step]) _fireBuffer(_hihatBuf, time);
       } else {
-        // Synthesis fallback
-        if (styleDef.kick[step])  _kickSynth.triggerAttackRelease('C1', '8n', time);
-        if (styleDef.snare[step]) _snareSynth.triggerAttackRelease('8n', time);
-        if (styleDef.hihat[step]) _hihatSynth.triggerAttackRelease('16n', time);
+        if (styleDef.kick[step]) {
+          const k = new Tone.MembraneSynth({ pitchDecay:0.05, octaves:6, envelope:{attack:0.001,decay:0.3,sustain:0,release:0.1} }).connect(_drumGain);
+          k.triggerAttackRelease("C1","8n",time); setTimeout(()=>{try{k.dispose();}catch(_){}},1000);
+        }
+        if (styleDef.snare[step]) {
+          const s = new Tone.NoiseSynth({ noise:{type:"white"}, envelope:{attack:0.001,decay:0.14,sustain:0,release:0.05} }).connect(_drumGain);
+          s.triggerAttackRelease("8n",time); setTimeout(()=>{try{s.dispose();}catch(_){}},1000);
+        }
+        if (styleDef.hihat[step]) {
+          const h = new Tone.MetalSynth({ frequency:400, envelope:{attack:0.001,decay:0.05,release:0.01}, harmonicity:5.1, modulationIndex:32, resonance:4000, octaves:1.5 }).connect(_drumGain);
+          h.triggerAttackRelease("16n",time); setTimeout(()=>{try{h.dispose();}catch(_){}},500);
+        }
       }
     },
     Array.from({ length: 16 }, (_, i) => i),
-    '16n',
+    "16n",
   );
 
-  // ── Chord / bass repeat every measure ──────────────────────────
   _chordRepeatId = Tone.Transport.scheduleRepeat((time) => {
     const idx = _currentChordIdx % chords.length;
     const chord = chords[idx];
-
-    // Bass — root note at each bassStep position within the bar
     const root = chordRoot(chord, 2);
     styleDef.bassSteps.forEach((step) => {
-      _bassSynth.triggerAttackRelease(root, '8n', time + step * sixteenth);
+      _bassSynth.triggerAttackRelease(root, "8n", time + step * sixteenth);
     });
-
-    // Pad — full chord voicing
     const notes = chordNotes(chord, 3);
-    if (notes.length) {
-      _padSynth.triggerAttackRelease(notes, styleDef.padDuration, time);
-    }
-
-    // Notify React via the draw scheduler (fires on the animation frame)
-    Tone.getDraw().schedule(() => {
-      onChordChange(idx);
-    }, time);
-
+    if (notes.length) _padSynth.triggerAttackRelease(notes, styleDef.padDuration, time);
+    Tone.getDraw().schedule(() => { onChordChange(idx); }, time);
     _currentChordIdx += 1;
-  }, '1m', 0);
+  }, "1m", 0);
 
   _drumSeq.start(0);
   Tone.Transport.start();
+  _transportStarted = true;
 };
 
-export const stopBackingTrack = () => {
-  _disposeCurrent();
-};
+export const stopBackingTrack = () => { _disposeCurrent(); };
 
 const _gainFromPercent = (pct) => Math.max(0, Math.min(1, pct / 100));
-
 const _applyVolume = (track, pct, muted) => {
   const map = { drums: _drumGain, bass: _bassGain, pad: _padGain };
   const node = map[track];
   if (!node) return;
   node.gain.value = muted ? 0 : _gainFromPercent(pct);
 };
-
-/** Update a single track's volume while the track is running. */
-export const setTrackVolume = (track, pct, muted) => {
-  _applyVolume(track, pct, muted);
-};
-
-/** Change transport BPM live. */
-export const setLiveBpm = (bpm) => {
-  Tone.Transport.bpm.value = bpm;
-};
+export const setTrackVolume = (track, pct, muted) => { _applyVolume(track, pct, muted); };
+export const setLiveBpm = (bpm) => { Tone.Transport.bpm.value = bpm; };
