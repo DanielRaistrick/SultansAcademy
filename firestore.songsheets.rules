@@ -1,0 +1,29 @@
+    match /songsheets/{sheetId} {
+      function validSongsheet() {
+        return request.resource.data.keys().hasOnly(['userId', 'sheet', 'title', 'updatedAt'])
+          && isOwner(request.resource.data.userId)
+          && request.resource.data.updatedAt is timestamp
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.sheet is map
+          && request.resource.data.sheet.keys().hasOnly(['version', 'title', 'artist', 'tuning', 'capo', 'notes', 'sections'])
+          && request.resource.data.sheet.version == 1
+          && request.resource.data.sheet.title == request.resource.data.title
+          && request.resource.data.sheet.artist is string
+          && request.resource.data.sheet.artist.size() <= 120
+          && request.resource.data.sheet.tuning in ['Standard', 'Drop D', 'DADGAD']
+          && request.resource.data.sheet.capo is int
+          && request.resource.data.sheet.capo >= 0
+          && request.resource.data.sheet.capo <= 12
+          && request.resource.data.sheet.notes is string
+          && request.resource.data.sheet.notes.size() <= 5000
+          && request.resource.data.sheet.sections is list
+          && request.resource.data.sheet.sections.size() > 0
+          && request.resource.data.sheet.sections.size() <= 100;
+      }
+
+      allow read, delete: if isOwner(resource.data.userId);
+      allow create: if validSongsheet();
+      allow update: if isOwner(resource.data.userId) && validSongsheet();
+    }

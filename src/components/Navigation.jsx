@@ -1,9 +1,17 @@
 import React from 'react';
+import { FileMusic } from 'lucide-react';
 import './Navigation.css';
 
 const Navigation = ({ activePage, onPageChange }) => {
   return (
     <nav className="navigation">
+      <button
+        className={`nav-button ${activePage === 'songsheets' ? 'active' : ''}`}
+        onClick={() => onPageChange('songsheets')}
+      >
+        <FileMusic size={24} />
+        <span className="nav-label">Songsheets</span>
+      </button>
       <button
         className={`nav-button ${activePage === 'fretboard' ? 'active' : ''}`}
         onClick={() => onPageChange('fretboard')}

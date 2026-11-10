@@ -1,0 +1,75 @@
+.songsheets { --sheet-line: #b8c5c6; letter-spacing: 0; }
+.songsheet-heading, .songsheet-toolbar, .songsheet-section-heading, .songsheet-bar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.songsheet-heading { flex-wrap: wrap; margin-bottom: 8px; }
+.songsheet-heading h2 { display: flex; align-items: center; gap: 10px; font-size: 24px; }
+.songsheets button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 10px; min-height: 36px; border: 1px solid #43505a; border-radius: 5px; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font: inherit; font-size: 13px; }
+.songsheets button:hover:not(:disabled) { border-color: var(--accent-primary); color: var(--accent-primary); }
+.songsheets button:disabled { opacity: .35; cursor: default; }
+.songsheets button:focus-visible, .songsheets input:focus-visible, .songsheets select:focus-visible, .songsheets textarea:focus-visible { outline: 2px solid #008b9b; outline-offset: 1px; }
+.songsheet-toolbar { justify-content: flex-end; flex-wrap: wrap; }
+.songsheet-toolbar > button[aria-label] { width: 36px; height: 36px; padding: 6px; flex-shrink: 0; }
+.songsheet-toolbar svg { width: 18px; height: 18px; }
+.songsheet-status { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+.songsheet-error { border-left: 3px solid #f3bb45; background: #30291c; padding: 12px; margin-bottom: 16px; font-size: 14px; }
+.songsheet-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
+.songsheet-library { border-right: 1px solid #33404b; padding-right: 16px; min-width: 0; }
+.songsheet-library > button { width: 100%; }
+.songsheet-library h3 { font-size: 14px; margin: 24px 0 10px; }
+.songsheet-library p { color: var(--text-secondary); font-size: 13px; }
+.songsheet-library-entry { display: flex; border-bottom: 1px solid #33404b; }
+.songsheet-library-entry button { border: 0; border-radius: 0; background: transparent; }
+.songsheet-library-entry button:first-child { flex: 1; justify-content: flex-start; text-align: left; min-width: 0; overflow-wrap: anywhere; }
+.songsheet-library-entry.selected { background: #15343b; border-left: 2px solid var(--accent-primary); }
+.songsheet-editor { min-width: 0; }
+.songsheet-metadata { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(100px, 1fr) 70px; gap: 12px; }
+.songsheets label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-secondary); min-width: 0; }
+.songsheet-metadata input, .songsheet-metadata select, .songsheet-notes textarea { width: 100%; min-width: 0; border: 1px solid #43505a; border-radius: 4px; background: var(--bg-secondary); color: white; padding: 9px; font: inherit; font-size: 14px; }
+.songsheet-meter { display: flex; gap: 12px; color: var(--accent-secondary); font-size: 13px; margin: 18px 0; }
+.songsheet-meter span { color: var(--text-secondary); }
+.songsheet-section { margin: 18px 0 26px; border-top: 1px solid #43505a; padding-top: 10px; }
+.songsheet-section-heading > input { min-width: 0; width: 240px; border: 0; background: transparent; color: white; font: inherit; font-size: 18px; font-weight: 600; padding: 8px 0; }
+.songsheet-bar { margin-top: 14px; background: #fbfcfa; color: #172729; border-radius: 4px; overflow: hidden; }
+.songsheet-bar-heading { padding: 5px 10px; background: #e5eeeb; font-size: 11px; }
+.songsheet-bar-heading .songsheet-toolbar { gap: 2px; }
+.songsheet-bar-heading button { background: transparent; color: #263d3f; border: 0; width: 30px !important; height: 30px !important; min-height: 30px; }
+.songsheet-bar-heading button:hover:not(:disabled) { color: #006a77; }
+.songsheet-tab-scroll { overflow-x: auto; padding: 12px 12px 20px; }
+.songsheet-tab-grid { min-width: 660px; }
+.songsheet-grid-row { display: grid; grid-template-columns: 28px repeat(16, minmax(0, 1fr)); align-items: center; }
+.songsheet-grid-row > span:first-child { text-align: center; font: 13px monospace; }
+.songsheet-beats span { text-align: center; font-size: 10px; color: #627475; height: 20px; }
+.songsheet-chord-cells { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); }
+.songsheet-chords input { width: 100%; min-width: 0; border: 1px solid #d5e0dc; border-radius: 0; height: 30px; background: #f0f5f0; color: #106454; text-align: center; font-size: 11px; font-weight: bold; }
+.songsheet-string { height: 29px; }
+.songsheet-string > input { width: 100%; min-width: 0; height: 29px; border: 0; border-right: 1px solid #edf0ed; border-radius: 0; color: #172729; text-align: center; font: 15px monospace; text-shadow: 2px 0 #fbfcfa, -2px 0 #fbfcfa, 0 2px #fbfcfa, 0 -2px #fbfcfa; background: linear-gradient(transparent 48%, var(--sheet-line) 48%, var(--sheet-line) 52%, transparent 52%); }
+.songsheet-string > input:nth-child(4n + 2) { border-left: 1px solid #b5c5c1; }
+.songsheet-string > input:focus { background: #d3eee7; }
+.songsheet-add { margin-top: 12px; }
+.songsheet-notes { margin-top: 24px; }
+.songsheet-notes textarea { resize: vertical; }
+.songsheet-print { display: none; }
+@media (max-width: 900px) {
+  .songsheet-layout { grid-template-columns: 1fr; gap: 20px; }
+  .songsheet-library { border-right: 0; border-bottom: 1px solid #33404b; padding: 0 0 16px; max-height: 200px; overflow-y: auto; }
+  .songsheet-library h3 { margin-top: 12px; }
+  .songsheet-metadata { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .songsheet-heading > .songsheet-toolbar { justify-content: flex-start; }
+  .songsheet-section-heading { align-items: flex-start; flex-wrap: wrap; }
+  .songsheet-section-heading > input { width: 100%; }
+}
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+  html, body, #root, .app { background: white !important; color: black !important; min-height: 0; }
+  body::before, .app-header, .navigation, .app-footer, .songsheet-screen { display: none !important; }
+  .app, .app-main { display: block; padding: 0; margin: 0; width: 100%; max-width: none; }
+  .songsheet-print { display: block; color: black; font-family: Georgia, serif; }
+  .songsheet-print header { margin-bottom: 20px; border-bottom: 1px solid #aaa; padding-bottom: 12px; }
+  .songsheet-print h1 { font-size: 25px; overflow-wrap: anywhere; }
+  .songsheet-print header p { margin-top: 6px; font-size: 11px; overflow-wrap: anywhere; }
+  .songsheet-print h2 { font-size: 15px; margin: 16px 0 4px; break-after: avoid; overflow-wrap: anywhere; }
+  .songsheet-print-bars { display: block; }
+  .songsheet-printed-bar { display: block; width: 100%; height: auto; break-inside: avoid; page-break-inside: avoid; }
+  .songsheet-print-notes { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 18px; }
+}

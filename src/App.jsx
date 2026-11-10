@@ -13,6 +13,7 @@ import LessonNotes from './components/LessonNotes';
 import ChordProgressions from './components/ChordProgressions';
 import Recorder from './components/Recorder';
 import BackingTrack from './components/BackingTrack';
+import Songsheets from './components/Songsheets';
 import { detectChord, NOTE_COLORS, getNoteAtPosition, CHORD_DATABASE } from './utils/chordDetection';
 import './App.css';
 
@@ -246,6 +247,8 @@ function App() {
           <Recorder />
         ) : activePage === 'backing' ? (
           <BackingTrack />
+        ) : activePage === 'songsheets' ? (
+          <Songsheets key={user.uid} />
         ) : (
           <LessonNotes />
         )}
