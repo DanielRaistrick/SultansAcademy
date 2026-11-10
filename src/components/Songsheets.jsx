@@ -20,24 +20,24 @@ function readDraft(key) {
 
 function PrintedBar({ bar, tuning, number }) {
   return (
-    <svg className="songsheet-printed-bar" viewBox="0 0 640 160" role="img" aria-label={`Bar ${number}`}>
-      <text x="5" y="12" fontSize="10" fill="#666">{number}</text>
+    <svg className="songsheet-printed-bar" viewBox="0 0 640 108" role="img" aria-label={`Bar ${number}`}>
+      <text x="5" y="10" fontSize="9" fill="#666">{number}</text>
       {bar.chords.map((chord, position) => chord && (
-        <text key={position} x={42 + position * 36} y="32" fontSize={Math.min(13, 32 / Math.max(chord.length * 0.6, 1))} fontWeight="bold">{chord}</text>
+        <text key={position} x={42 + position * 36} y="22" fontSize={Math.min(12, 32 / Math.max(chord.length * 0.6, 1))} fontWeight="bold">{chord}</text>
       ))}
       {tuning.map((name, stringIndex) => (
         <g key={stringIndex}>
-          <text x="8" y={54 + stringIndex * 18} fontSize="12">{name}</text>
-          <line x1="32" y1={50 + stringIndex * 18} x2="628" y2={50 + stringIndex * 18} stroke="#555" strokeWidth="0.7" />
+          <text x="8" y={38 + stringIndex * 12} fontSize="10">{name}</text>
+          <line x1="32" y1={34 + stringIndex * 12} x2="628" y2={34 + stringIndex * 12} stroke="#555" strokeWidth="0.7" />
           {bar.strings[stringIndex].map((fret, position) => fret !== '' && (
             <g key={position}>
-              <rect x={36 + position * 36} y={42 + stringIndex * 18} width="25" height="16" fill="white" />
-              <text x={48 + position * 36} y={55 + stringIndex * 18} textAnchor="middle" fontSize="14" fontFamily="monospace">{fret}</text>
+              <rect x={36 + position * 36} y={28 + stringIndex * 12} width="25" height="12" fill="white" />
+              <text x={48 + position * 36} y={38 + stringIndex * 12} textAnchor="middle" fontSize="11" fontFamily="monospace">{fret}</text>
             </g>
           ))}
         </g>
       ))}
-      <path d="M32 50V140 M628 50V140" stroke="black" fill="none" />
+      <path d="M32 34V94 M628 34V94" stroke="black" fill="none" />
     </svg>
   );
 }
