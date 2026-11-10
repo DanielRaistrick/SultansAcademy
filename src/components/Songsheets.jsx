@@ -3,7 +3,7 @@ import { collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, setDoc,
 import { ArrowDown, ArrowUp, Copy, FileMusic, Plus, Printer, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { copyBar, copySection, createBar, createSection, createSongsheet, decodeSongsheet, encodeSongsheet, normalizeFret, TUNINGS, updateBar } from '../utils/songsheet';
+import { copyBar, copySection, createBar, createSection, createSongsheet, decodeSongsheet, encodeSongsheet, getBarLayout, normalizeFret, resizeBar, TUNINGS, updateBar } from '../utils/songsheet';
 import './Songsheets.css';
 
 const IconButton = ({ label, children, ...props }) => (
@@ -19,26 +19,39 @@ function readDraft(key) {
 }
 
 function PrintedBar({ bar, tuning, number }) {
+  const { widths } = getBarLayout(bar);
   return (
-    <svg className="songsheet-printed-bar" viewBox="0 0 640 108" role="img" aria-label={`Bar ${number}`}>
-      <text x="5" y="10" fontSize="9" fill="#666">{number}</text>
-      {bar.chords.map((chord, position) => chord && (
-        <text key={position} x={42 + position * 36} y="22" fontSize={Math.min(12, 32 / Math.max(chord.length * 0.6, 1))} fontWeight="bold">{chord}</text>
-      ))}
-      {tuning.map((name, stringIndex) => (
-        <g key={stringIndex}>
-          <text x="8" y={38 + stringIndex * 12} fontSize="10">{name}</text>
-          <line x1="32" y1={34 + stringIndex * 12} x2="628" y2={34 + stringIndex * 12} stroke="#555" strokeWidth="0.7" />
-          {bar.strings[stringIndex].map((fret, position) => fret !== '' && (
-            <g key={position}>
-              <rect x={36 + position * 36} y={28 + stringIndex * 12} width="25" height="12" fill="white" />
-              <text x={48 + position * 36} y={38 + stringIndex * 12} textAnchor="middle" fontSize="11" fontFamily="monospace">{fret}</text>
-            </g>
-          ))}
-        </g>
-      ))}
-      <path d="M32 34V94 M628 34V94" stroke="black" fill="none" />
-    </svg>
+    <div className="songsheet-printed-measure" role="group" aria-label={`Bar ${number}`}>
+      {Array.from({ length: Math.ceil(widths.length / 16) }, (_, fragmentIndex) => {
+        const start = fragmentIndex * 16;
+        const fragmentWidths = widths.slice(start, start + 16);
+        const offsets = [28];
+        fragmentWidths.forEach((width) => offsets.push(offsets.at(-1) + width));
+        const end = offsets.at(-1);
+        return (
+          <svg key={start} className="songsheet-printed-bar" viewBox={`0 0 ${end + 12} 108`} role="img" aria-label={`Bar ${number}, positions ${start + 1} to ${start + fragmentWidths.length}`}>
+            <text x="5" y="10" fontSize="9" fill="#666">{number}{start > 0 ? ' (continued)' : ''}</text>
+            {bar.chords.slice(start, start + 16).map((chord, position) => chord && (
+              <text key={position} x={offsets[position] + 4} y="22" fontSize={Math.min(12, (fragmentWidths[position] - 8) / Math.max(chord.length * 0.6, 1))} fontWeight="bold">{chord}</text>
+            ))}
+            {tuning.map((name, stringIndex) => (
+              <g key={stringIndex}>
+                <text x="8" y={38 + stringIndex * 12} fontSize="10">{name}</text>
+                <line x1="28" y1={34 + stringIndex * 12} x2={end} y2={34 + stringIndex * 12} stroke="#555" strokeWidth="0.7" />
+                {bar.strings[stringIndex].slice(start, start + 16).map((fret, position) => fret !== '' && (
+                  <g key={position}>
+                    <rect x={offsets[position] + fragmentWidths[position] / 2 - 12} y={28 + stringIndex * 12} width="25" height="12" fill="white" />
+                    <text x={offsets[position] + fragmentWidths[position] / 2} y={38 + stringIndex * 12} textAnchor="middle" fontSize="11" fontFamily="monospace">{fret}</text>
+                  </g>
+                ))}
+              </g>
+            ))}
+            <line x1="28" y1="34" x2="28" y2="94" stroke="black" strokeDasharray={start > 0 ? '2 2' : undefined} />
+            <line x1={end} y1="34" x2={end} y2="94" stroke="black" strokeDasharray={start + 16 < widths.length ? '2 2' : undefined} />
+          </svg>
+        );
+      })}
+    </div>
   );
 }
 
@@ -158,8 +171,14 @@ export default function Songsheets() {
     if (event.key === 'ArrowRight' || event.key === 'Enter') nextPosition++;
     if (event.key === 'ArrowUp') nextString--;
     if (event.key === 'ArrowDown') nextString++;
-    if (nextPosition < 0) { barIndex--; nextPosition = 15; }
-    if (nextPosition > 15) { barIndex++; nextPosition = 0; }
+    if (nextPosition < 0) {
+      barIndex--;
+      if (!bars[barIndex]) return;
+      nextPosition = bars[barIndex].chords.length - 1;
+    } else if (nextPosition >= bars[barIndex].chords.length) {
+      barIndex++;
+      nextPosition = 0;
+    }
     if (!bars[barIndex] || nextString < 0 || nextString > 5) return;
     const target = sheetRef.current?.querySelector(`[data-cell="${bars[barIndex].id}-${nextString}-${nextPosition}"]`);
     target?.focus();
@@ -204,7 +223,7 @@ export default function Songsheets() {
             <label>Tuning<select value={sheet.tuning} onChange={(event) => edit({ ...sheet, tuning: event.target.value })}>{Object.keys(TUNINGS).map((name) => <option key={name}>{name}</option>)}</select></label>
             <label>Capo<input type="number" min="0" max="12" value={sheet.capo} onChange={(event) => edit({ ...sheet, capo: Math.max(0, Math.min(12, Number(event.target.value) || 0)) })} /></label>
           </div>
-          <div className="songsheet-meter">4/4 <span>16 positions per bar</span></div>
+          <div className="songsheet-meter">4/4</div>
           {sheet.sections.map((section, sectionIndex) => (
             <section className="songsheet-section" key={section.id}>
               <div className="songsheet-section-heading">
@@ -218,17 +237,26 @@ export default function Songsheets() {
               </div>
               {section.bars.map((bar, barIndex) => {
                 const number = ++barNumber;
+                const layout = getBarLayout(bar);
                 return (
                   <div className="songsheet-bar" key={bar.id}>
-                    <div className="songsheet-bar-heading"><span>Bar {number}</span><div className="songsheet-toolbar">
+                    <div className="songsheet-bar-heading"><span>Bar {number}</span><div className="songsheet-bar-controls">
+                      <label className="songsheet-bar-option">Positions<select aria-label={`Bar ${number} positions`} value={bar.chords.length} onChange={(event) => {
+                        const resized = resizeBar(bar, Number(event.target.value));
+                        if (!resized) { setError(`Bar ${number} has notes or chords after position 16. Move or clear those before reducing its size.`); return; }
+                        setError('');
+                        edit(updateBar(sheet, section.id, bar.id, () => resized));
+                      }}><option value={16}>16</option><option value={32}>32</option></select></label>
+                      <label className="songsheet-bar-option">Spacing<select aria-label={`Bar ${number} spacing`} value={bar.spacing || 'auto'} onChange={(event) => edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, spacing: event.target.value })))}><option value="auto">Auto</option><option value="roomy">Roomy</option><option value="wide">Wide</option></select></label>
+                      <div className="songsheet-toolbar">
                       <IconButton label={`Move bar ${number} up`} disabled={barIndex === 0} onClick={() => changeSection(section.id, (current) => { const bars = [...current.bars]; [bars[barIndex - 1], bars[barIndex]] = [bars[barIndex], bars[barIndex - 1]]; return { ...current, bars }; })}><ArrowUp size={14} /></IconButton>
                       <IconButton label={`Move bar ${number} down`} disabled={barIndex === section.bars.length - 1} onClick={() => changeSection(section.id, (current) => { const bars = [...current.bars]; [bars[barIndex], bars[barIndex + 1]] = [bars[barIndex + 1], bars[barIndex]]; return { ...current, bars }; })}><ArrowDown size={14} /></IconButton>
                       <IconButton label={`Copy bar ${number}`} onClick={() => changeSection(section.id, (current) => ({ ...current, bars: [...current.bars.slice(0, barIndex + 1), copyBar(bar), ...current.bars.slice(barIndex + 1)] }))}><Copy size={14} /></IconButton>
                       <IconButton label={`Delete bar ${number}`} disabled={section.bars.length === 1} onClick={() => { if (window.confirm(`Delete bar ${number}?`)) changeSection(section.id, (current) => ({ ...current, bars: current.bars.filter((item) => item.id !== bar.id) })); }}><Trash2 size={14} /></IconButton>
-                    </div></div>
+                    </div></div></div>
                     <div className="songsheet-tab-scroll">
-                      <div className="songsheet-tab-grid">
-                        <div className="songsheet-grid-row songsheet-beats"><span />{bar.chords.map((_, position) => <span key={position}>{position % 4 === 0 ? position / 4 + 1 : '·'}</span>)}</div>
+                      <div className="songsheet-tab-grid" style={{ '--tab-columns': layout.widths.map((width) => `minmax(${width}px, 1fr)`).join(' '), '--tab-min-width': `${layout.minimumWidth}px` }}>
+                        <div className="songsheet-grid-row songsheet-beats"><span />{bar.chords.map((_, position) => <span key={position}>{position + 1}</span>)}</div>
                         <div className="songsheet-grid-row songsheet-chords"><span /><div className="songsheet-chord-cells">{bar.chords.map((chord, position) => <input key={position} aria-label={`Bar ${number} chord position ${position + 1}`} title={chord || `Chord at position ${position + 1}`} maxLength={12} value={chord} onChange={(event) => edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, chords: current.chords.map((value, index) => index === position ? event.target.value : value) })))} />)}</div></div>
                         {bar.strings.map((string, stringIndex) => <div className="songsheet-grid-row songsheet-string" key={stringIndex}>
                           <span>{tuning[stringIndex]}</span>{string.map((fret, position) => <input key={position} data-cell={`${bar.id}-${stringIndex}-${position}`} aria-label={`Bar ${number} string ${stringIndex + 1} position ${position + 1}`} autoComplete="off" spellCheck={false} inputMode="text" maxLength={2} value={fret} onFocus={(event) => event.target.select()} onKeyDown={(event) => moveCell(event, bar.id, stringIndex, position)} onChange={(event) => { const next = normalizeFret(event.target.value); if (next !== null) edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, strings: current.strings.map((row, rowIndex) => rowIndex !== stringIndex ? row : row.map((value, index) => index === position ? next : value)) }))); }} />)}

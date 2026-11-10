@@ -86,8 +86,11 @@ You can deploy the `dist` folder to any static hosting service:
 
 ## Songsheets
 
-The Songsheets page supports one six-string guitar part in 4/4, with 16 fixed
-positions per bar. Enter frets 0-36 or `x` for a muted note; chord names sit above
+The Songsheets page supports one six-string guitar part in 4/4, with 16 or 32
+numbered positions per bar. Each bar has a Positions selector and Auto, Roomy,
+or Wide spacing. Auto spacing expands columns to fit chord headings; bars grow
+and scroll horizontally when needed. Reducing a bar to 16 positions is blocked
+if it would discard any notes or chord headings. Enter frets 0-36 or `x` for a muted note; chord names sit above
 the corresponding position. Arrow keys move between strings and positions, and
 Enter moves to the next position. Frets are relative to the selected capo.
 
@@ -99,7 +102,9 @@ online backup. Opening or creating another sheet replaces the current draft
 after confirmation if it has unsaved changes.
 
 **Print / PDF** uses an A4 layout with chord headings and string labels. Select
-Save as PDF in the browser print dialog. There is no playback, Guitar Pro import,
+Save as PDF in the browser print dialog. A 32-position bar continues onto a second
+line with the same bar number rather than squeezing the fret numbers smaller.
+There is no playback, Guitar Pro import,
 standard notation, or explicit note-duration editing in this version. Fixed grid
 positions do not represent a complete rhythmic score.
 

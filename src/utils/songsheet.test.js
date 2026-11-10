@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { doc, getFirestore, writeBatch } from 'firebase/firestore';
-import { createSongsheet, copySection, decodeSongsheet, encodeSongsheet, normalizeFret, updateBar } from './songsheet.js';
+import { createSongsheet, copySection, decodeSongsheet, encodeSongsheet, getBarLayout, normalizeFret, resizeBar, updateBar } from './songsheet.js';
 
 globalThis.crypto ||= webcrypto;
 
@@ -57,4 +57,49 @@ test('online storage round-trips and passes the real Firestore write validator',
     assert.throws(() => writeBatch(db).set(doc(db, 'songsheets', 'invalid'), { sheet }), /nested arrays/i);
     assert.doesNotThrow(() => writeBatch(db).set(doc(db, 'songsheets', 'valid'), { sheet: encoded }));
   } finally { await deleteApp(app); }
+});
+
+test('expanding a bar preserves frets and chord positions and creates independent empty slots', () => {
+  const bar = createSongsheet().sections[0].bars[0];
+  bar.strings[0][15] = '12';
+  bar.chords[15] = 'Am7';
+  const expanded = resizeBar(bar, 32);
+  assert.equal(expanded.chords.length, 32);
+  assert.equal(expanded.strings[0][15], '12');
+  assert.equal(expanded.chords[15], 'Am7');
+  assert.equal(expanded.strings[0][31], '');
+  assert.equal(bar.strings[0].length, 16);
+  expanded.strings[0][31] = '7';
+  assert.equal(expanded.strings[1][31], '');
+});
+
+test('shrinking a bar never discards notes or chord headings', () => {
+  const bar = resizeBar(createSongsheet().sections[0].bars[0], 32);
+  bar.strings[4][20] = '0';
+  assert.equal(resizeBar(bar, 16), null);
+  bar.strings[4][20] = '';
+  bar.chords[31] = 'D';
+  assert.equal(resizeBar(bar, 16), null);
+  bar.chords[31] = '';
+  assert.equal(resizeBar(bar, 16).strings[0].length, 16);
+  assert.equal(resizeBar(bar, 4), null);
+});
+
+test('bar width grows automatically with positions and chord headings and supports manual spacing', () => {
+  const bar = createSongsheet().sections[0].bars[0];
+  const regular = getBarLayout(bar);
+  const expanded = getBarLayout(resizeBar(bar, 32));
+  assert.equal(regular.widths.length, 16);
+  assert.ok(expanded.minimumWidth > regular.minimumWidth);
+  bar.chords[3] = 'F#m7add11';
+  assert.ok(getBarLayout(bar).widths[3] > regular.widths[3]);
+  assert.equal(getBarLayout(bar).widths[4], regular.widths[4]);
+  assert.ok(getBarLayout({ ...bar, spacing: 'wide' }).minimumWidth > getBarLayout(bar).minimumWidth);
+});
+
+test('expanded bars and manual spacing survive online storage encoding', () => {
+  const sheet = createSongsheet();
+  sheet.sections[0].bars[0] = { ...resizeBar(sheet.sections[0].bars[0], 32), spacing: 'wide' };
+  sheet.sections[0].bars[0].strings[5][31] = '24';
+  assert.deepEqual(decodeSongsheet(encodeSongsheet(sheet)), sheet);
 });
