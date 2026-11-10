@@ -86,13 +86,20 @@ You can deploy the `dist` folder to any static hosting service:
 
 ## Songsheets
 
-The Songsheets page supports one six-string guitar part in 4/4, with 16 or 32
-numbered positions per bar. Each bar has a Positions selector and Auto, Roomy,
-or Wide spacing. Auto spacing expands columns to fit chord headings; bars grow
-and scroll horizontally when needed. Reducing a bar to 16 positions is blocked
-if it would discard any notes or chord headings. Enter frets 0-36 or `x` for a muted note; chord names sit above
-the corresponding position. Arrow keys move between strings and positions, and
-Enter moves to the next position. Frets are relative to the selected capo.
+The Songsheets page supports one six-string guitar part with compact, free-flow
+tab entry. Click a string and type frets 0-36 or `x` for a muted note. The cursor
+advances as you type; entering a valid second digit after 1, 2, or 3 forms a
+two-digit fret. Notes sit close together, with extra width only where a longer
+fret number or chord heading needs it. Bars grow automatically as you reach the
+end, with no 16/32-position selection. Existing saved sheets keep all their notes.
+
+Space or a hyphen inserts a blank column, shifting every string and chord heading
+together. The plus/minus toolbar icons insert or remove a column at the cursor.
+Backspace clears the preceding note when the cursor is empty, Delete clears the
+current note, and Ctrl+Backspace removes the preceding column across all strings.
+Arrow keys move between strings and positions; Home/End jump within a bar. Enter
+moves to the next bar, creating one if needed. Compact, Roomy, and Wide spacing
+remain available per bar. Frets are relative to the selected capo.
 
 Sheets include title, artist, tuning, capo, sections, and notes. Bars and sections
 can be copied, reordered, and deleted. Undo/redo applies to edits. Browser drafts
@@ -102,11 +109,10 @@ online backup. Opening or creating another sheet replaces the current draft
 after confirmation if it has unsaved changes.
 
 **Print / PDF** uses an A4 layout with chord headings and string labels. Select
-Save as PDF in the browser print dialog. A 32-position bar continues onto a second
-line with the same bar number rather than squeezing the fret numbers smaller.
-There is no playback, Guitar Pro import,
-standard notation, or explicit note-duration editing in this version. Fixed grid
-positions do not represent a complete rhythmic score.
+Save as PDF in the browser print dialog. Print lines wrap by their actual width,
+continuing long bars with the same bar number. Short bars are not stretched out.
+There is no playback, Guitar Pro import, standard notation, or explicit
+note-duration editing in this version. Spacing does not define musical timing.
 
 ### Firestore Access
 

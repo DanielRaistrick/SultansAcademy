@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
-import { ArrowDown, ArrowUp, Copy, FileMusic, Plus, Printer, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Copy, FileMusic, Minus, Plus, Printer, Redo2, Save, Trash2, Undo2 } from 'lucide-react';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { copyBar, copySection, createBar, createSection, createSongsheet, decodeSongsheet, encodeSongsheet, getBarLayout, normalizeFret, resizeBar, TUNINGS, updateBar } from '../utils/songsheet';
+import { copyBar, copySection, createBar, createSection, createSongsheet, decodeSongsheet, encodeSongsheet, getBarLayout, getPrintFragments, insertBarPosition, normalizeFret, removeBarPosition, setBarFret, TUNINGS, updateBar } from '../utils/songsheet';
 import './Songsheets.css';
 
 const IconButton = ({ label, children, ...props }) => (
@@ -19,35 +19,32 @@ function readDraft(key) {
 }
 
 function PrintedBar({ bar, tuning, number }) {
-  const { widths } = getBarLayout(bar);
   return (
     <div className="songsheet-printed-measure" role="group" aria-label={`Bar ${number}`}>
-      {Array.from({ length: Math.ceil(widths.length / 16) }, (_, fragmentIndex) => {
-        const start = fragmentIndex * 16;
-        const fragmentWidths = widths.slice(start, start + 16);
+      {getPrintFragments(bar).map(({ start, end: endPosition, widths: fragmentWidths }) => {
         const offsets = [28];
         fragmentWidths.forEach((width) => offsets.push(offsets.at(-1) + width));
         const end = offsets.at(-1);
         return (
-          <svg key={start} className="songsheet-printed-bar" viewBox={`0 0 ${end + 12} 108`} role="img" aria-label={`Bar ${number}, positions ${start + 1} to ${start + fragmentWidths.length}`}>
+          <svg key={start} className="songsheet-printed-bar" style={{ width: `${end + 12}px` }} viewBox={`0 0 ${end + 12} 108`} role="img" aria-label={`Bar ${number}, positions ${start + 1} to ${endPosition}`}>
             <text x="5" y="10" fontSize="9" fill="#666">{number}{start > 0 ? ' (continued)' : ''}</text>
-            {bar.chords.slice(start, start + 16).map((chord, position) => chord && (
+            {bar.chords.slice(start, endPosition).map((chord, position) => chord && (
               <text key={position} x={offsets[position] + 4} y="22" fontSize={Math.min(12, (fragmentWidths[position] - 8) / Math.max(chord.length * 0.6, 1))} fontWeight="bold">{chord}</text>
             ))}
             {tuning.map((name, stringIndex) => (
               <g key={stringIndex}>
                 <text x="8" y={38 + stringIndex * 12} fontSize="10">{name}</text>
                 <line x1="28" y1={34 + stringIndex * 12} x2={end} y2={34 + stringIndex * 12} stroke="#555" strokeWidth="0.7" />
-                {bar.strings[stringIndex].slice(start, start + 16).map((fret, position) => fret !== '' && (
+                {bar.strings[stringIndex].slice(start, endPosition).map((fret, position) => fret !== '' && (
                   <g key={position}>
-                    <rect x={offsets[position] + fragmentWidths[position] / 2 - 12} y={28 + stringIndex * 12} width="25" height="12" fill="white" />
+                    <rect x={offsets[position] + fragmentWidths[position] / 2 - (fret.length * 7 + 4) / 2} y={28 + stringIndex * 12} width={fret.length * 7 + 4} height="12" fill="white" />
                     <text x={offsets[position] + fragmentWidths[position] / 2} y={38 + stringIndex * 12} textAnchor="middle" fontSize="11" fontFamily="monospace">{fret}</text>
                   </g>
                 ))}
               </g>
             ))}
             <line x1="28" y1="34" x2="28" y2="94" stroke="black" strokeDasharray={start > 0 ? '2 2' : undefined} />
-            <line x1={end} y1="34" x2={end} y2="94" stroke="black" strokeDasharray={start + 16 < widths.length ? '2 2' : undefined} />
+            <line x1={end} y1="34" x2={end} y2="94" stroke="black" strokeDasharray={endPosition < bar.chords.length ? '2 2' : undefined} />
           </svg>
         );
       })}
@@ -66,8 +63,20 @@ export default function Songsheets() {
   const [saving, setSaving] = useState(false);
   const [past, setPast] = useState([]);
   const [future, setFuture] = useState([]);
+  const [cursor, setCursor] = useState(null);
   const sheetRef = useRef(null);
+  const pendingFocus = useRef(null);
+  const lastTyped = useRef(null);
   const { sheet, id, dirty } = editor;
+
+  useLayoutEffect(() => {
+    const target = pendingFocus.current;
+    if (!target) return;
+    pendingFocus.current = null;
+    const input = sheetRef.current?.querySelector(`[data-cell="${target.barId}-${target.stringIndex}-${target.position}"]`);
+    input?.focus();
+    input?.select();
+  }, [sheet]);
 
   useEffect(() => {
     return onSnapshot(query(collection(db, 'songsheets'), where('userId', '==', user.uid)), (snapshot) => {
@@ -106,6 +115,7 @@ export default function Songsheets() {
 
   const undo = () => {
     if (!past.length) return;
+    lastTyped.current = null;
     setFuture((history) => [...history, sheet]);
     setEditor((current) => ({ ...current, sheet: past.at(-1), dirty: true }));
     setPast((history) => history.slice(0, -1));
@@ -113,6 +123,7 @@ export default function Songsheets() {
 
   const redo = () => {
     if (!future.length) return;
+    lastTyped.current = null;
     setPast((history) => [...history, sheet]);
     setEditor((current) => ({ ...current, sheet: future.at(-1), dirty: true }));
     setFuture((history) => history.slice(0, -1));
@@ -123,6 +134,8 @@ export default function Songsheets() {
     setEditor({ sheet: next, id: nextId, dirty: nextDirty });
     setPast([]);
     setFuture([]);
+    setCursor(null);
+    lastTyped.current = null;
   };
 
   const save = async () => {
@@ -160,29 +173,92 @@ export default function Songsheets() {
     edit({ ...sheet, sections });
   };
 
-  const moveCell = (event, barId, stringIndex, position) => {
-    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter'].includes(event.key)) return;
+  const focusCell = (barId, stringIndex, position) => {
+    const target = sheetRef.current?.querySelector(`[data-cell="${barId}-${stringIndex}-${position}"]`);
+    target?.focus();
+    target?.select();
+  };
+
+  const changeColumn = (sectionId, bar, stringIndex, position, remove = false, advance = false) => {
+    lastTyped.current = null;
+    const next = remove ? removeBarPosition(bar, position) : insertBarPosition(bar, position);
+    pendingFocus.current = { barId: bar.id, stringIndex, position: Math.min(position + (advance ? 1 : 0), next.chords.length - 1) };
+    edit(updateBar(sheet, sectionId, bar.id, () => next));
+  };
+
+  const typeFret = (sectionId, bar, stringIndex, position, value) => {
+    const fret = normalizeFret(value);
+    if (fret === null) return;
+    const previous = lastTyped.current;
+    const joined = previous && previous.barId === bar.id && previous.stringIndex === stringIndex
+      && previous.position + 1 === position && bar.strings[stringIndex][position] === ''
+      && /^[0-9]$/.test(fret) && normalizeFret(previous.fret + fret) !== null;
+    const targetPosition = joined ? previous.position : position;
+    const nextFret = joined ? previous.fret + fret : fret;
+    const next = setBarFret(bar, stringIndex, targetPosition, nextFret);
+    lastTyped.current = !joined && /^[1-3]$/.test(fret) ? { barId: bar.id, stringIndex, position, fret } : null;
+    if (fret !== '') pendingFocus.current = { barId: bar.id, stringIndex, position: targetPosition + 1 };
+    edit(updateBar(sheet, sectionId, bar.id, () => next));
+  };
+
+  const moveCell = (event, sectionId, bar, stringIndex, position) => {
+    if (event.ctrlKey || event.metaKey) {
+      if (event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
+      if (event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+      if (event.key.toLowerCase() === 's') { event.preventDefault(); save(); }
+      if (event.key === 'Backspace') { event.preventDefault(); changeColumn(sectionId, bar, stringIndex, Math.max(0, position - 1), true); }
+      return;
+    }
+    if (/^[0-9xX]$/.test(event.key)) {
+      event.preventDefault();
+      typeFret(sectionId, bar, stringIndex, position, event.key);
+      return;
+    }
+    if (!/^[0-9xX]$/.test(event.key)) lastTyped.current = null;
+    if ([' ', '-', '_', 'Insert'].includes(event.key)) {
+      event.preventDefault();
+      changeColumn(sectionId, bar, stringIndex, position, false, event.key !== 'Insert');
+      return;
+    }
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+      event.preventDefault();
+      const targetPosition = event.key === 'Backspace' && bar.strings[stringIndex][position] === '' ? Math.max(0, position - 1) : position;
+      pendingFocus.current = { barId: bar.id, stringIndex, position: targetPosition };
+      edit(updateBar(sheet, sectionId, bar.id, (current) => setBarFret(current, stringIndex, targetPosition, '')));
+      return;
+    }
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const bars = sheet.sections.flatMap((section) => section.bars);
-    let barIndex = bars.findIndex((bar) => bar.id === barId);
+    let barIndex = bars.findIndex((item) => item.id === bar.id);
     let nextPosition = position;
     let nextString = stringIndex;
     if (event.key === 'ArrowLeft') nextPosition--;
-    if (event.key === 'ArrowRight' || event.key === 'Enter') nextPosition++;
+    if (event.key === 'ArrowRight') nextPosition++;
     if (event.key === 'ArrowUp') nextString--;
     if (event.key === 'ArrowDown') nextString++;
+    if (event.key === 'Home') nextPosition = 0;
+    if (event.key === 'End') nextPosition = bar.chords.length - 1;
+    if (event.key === 'Enter') {
+      if (bars[barIndex + 1]) focusCell(bars[barIndex + 1].id, stringIndex, 0);
+      else {
+        const next = createBar();
+        pendingFocus.current = { barId: next.id, stringIndex, position: 0 };
+        changeSection(sectionId, (current) => ({ ...current, bars: [...current.bars, next] }));
+      }
+      return;
+    }
     if (nextPosition < 0) {
       barIndex--;
       if (!bars[barIndex]) return;
       nextPosition = bars[barIndex].chords.length - 1;
     } else if (nextPosition >= bars[barIndex].chords.length) {
-      barIndex++;
-      nextPosition = 0;
+      pendingFocus.current = { barId: bar.id, stringIndex, position: nextPosition };
+      edit(updateBar(sheet, sectionId, bar.id, (current) => insertBarPosition(current, current.chords.length)));
+      return;
     }
     if (!bars[barIndex] || nextString < 0 || nextString > 5) return;
-    const target = sheetRef.current?.querySelector(`[data-cell="${bars[barIndex].id}-${nextString}-${nextPosition}"]`);
-    target?.focus();
-    target?.select();
+    focusCell(bars[barIndex].id, nextString, nextPosition);
   };
 
   const tuning = TUNINGS[sheet.tuning] || TUNINGS.Standard;
@@ -238,28 +314,25 @@ export default function Songsheets() {
               {section.bars.map((bar, barIndex) => {
                 const number = ++barNumber;
                 const layout = getBarLayout(bar);
+                const activePosition = cursor?.barId === bar.id ? Math.min(cursor.position, bar.chords.length - 1) : 0;
+                const activeString = cursor?.barId === bar.id ? cursor.stringIndex : 0;
                 return (
                   <div className="songsheet-bar" key={bar.id}>
                     <div className="songsheet-bar-heading"><span>Bar {number}</span><div className="songsheet-bar-controls">
-                      <label className="songsheet-bar-option">Positions<select aria-label={`Bar ${number} positions`} value={bar.chords.length} onChange={(event) => {
-                        const resized = resizeBar(bar, Number(event.target.value));
-                        if (!resized) { setError(`Bar ${number} has notes or chords after position 16. Move or clear those before reducing its size.`); return; }
-                        setError('');
-                        edit(updateBar(sheet, section.id, bar.id, () => resized));
-                      }}><option value={16}>16</option><option value={32}>32</option></select></label>
-                      <label className="songsheet-bar-option">Spacing<select aria-label={`Bar ${number} spacing`} value={bar.spacing || 'auto'} onChange={(event) => edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, spacing: event.target.value })))}><option value="auto">Auto</option><option value="roomy">Roomy</option><option value="wide">Wide</option></select></label>
+                      <label className="songsheet-bar-option">Spacing<select aria-label={`Bar ${number} spacing`} value={bar.spacing || 'auto'} onChange={(event) => edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, spacing: event.target.value })))}><option value="auto">Compact</option><option value="roomy">Roomy</option><option value="wide">Wide</option></select></label>
                       <div className="songsheet-toolbar">
+                      <IconButton label={`Insert space in bar ${number}`} onClick={() => changeColumn(section.id, bar, activeString, activePosition)}><Plus size={14} /></IconButton>
+                      <IconButton label={`Remove column in bar ${number}`} disabled={bar.chords.length <= 1} onClick={() => changeColumn(section.id, bar, activeString, activePosition, true)}><Minus size={14} /></IconButton>
                       <IconButton label={`Move bar ${number} up`} disabled={barIndex === 0} onClick={() => changeSection(section.id, (current) => { const bars = [...current.bars]; [bars[barIndex - 1], bars[barIndex]] = [bars[barIndex], bars[barIndex - 1]]; return { ...current, bars }; })}><ArrowUp size={14} /></IconButton>
                       <IconButton label={`Move bar ${number} down`} disabled={barIndex === section.bars.length - 1} onClick={() => changeSection(section.id, (current) => { const bars = [...current.bars]; [bars[barIndex], bars[barIndex + 1]] = [bars[barIndex + 1], bars[barIndex]]; return { ...current, bars }; })}><ArrowDown size={14} /></IconButton>
                       <IconButton label={`Copy bar ${number}`} onClick={() => changeSection(section.id, (current) => ({ ...current, bars: [...current.bars.slice(0, barIndex + 1), copyBar(bar), ...current.bars.slice(barIndex + 1)] }))}><Copy size={14} /></IconButton>
                       <IconButton label={`Delete bar ${number}`} disabled={section.bars.length === 1} onClick={() => { if (window.confirm(`Delete bar ${number}?`)) changeSection(section.id, (current) => ({ ...current, bars: current.bars.filter((item) => item.id !== bar.id) })); }}><Trash2 size={14} /></IconButton>
                     </div></div></div>
                     <div className="songsheet-tab-scroll">
-                      <div className="songsheet-tab-grid" style={{ '--tab-columns': layout.widths.map((width) => `minmax(${width}px, 1fr)`).join(' '), '--tab-min-width': `${layout.minimumWidth}px` }}>
-                        <div className="songsheet-grid-row songsheet-beats"><span />{bar.chords.map((_, position) => <span key={position}>{position + 1}</span>)}</div>
-                        <div className="songsheet-grid-row songsheet-chords"><span /><div className="songsheet-chord-cells">{bar.chords.map((chord, position) => <input key={position} aria-label={`Bar ${number} chord position ${position + 1}`} title={chord || `Chord at position ${position + 1}`} maxLength={12} value={chord} onChange={(event) => edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, chords: current.chords.map((value, index) => index === position ? event.target.value : value) })))} />)}</div></div>
+                      <div className="songsheet-tab-grid" style={{ '--tab-columns': layout.widths.map((width) => `${width}px`).join(' '), '--tab-min-width': `${layout.minimumWidth}px` }}>
+                        <div className="songsheet-grid-row songsheet-chords"><span /><div className="songsheet-chord-cells">{bar.chords.map((chord, position) => <input key={position} aria-label={`Bar ${number} chord position ${position + 1}`} title={chord || `Chord at position ${position + 1}`} maxLength={12} value={chord} onFocus={() => { lastTyped.current = null; setCursor({ barId: bar.id, stringIndex: 0, position }); }} onChange={(event) => edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, chords: current.chords.map((value, index) => index === position ? event.target.value : value) })))} />)}</div></div>
                         {bar.strings.map((string, stringIndex) => <div className="songsheet-grid-row songsheet-string" key={stringIndex}>
-                          <span>{tuning[stringIndex]}</span>{string.map((fret, position) => <input key={position} data-cell={`${bar.id}-${stringIndex}-${position}`} aria-label={`Bar ${number} string ${stringIndex + 1} position ${position + 1}`} autoComplete="off" spellCheck={false} inputMode="text" maxLength={2} value={fret} onFocus={(event) => event.target.select()} onKeyDown={(event) => moveCell(event, bar.id, stringIndex, position)} onChange={(event) => { const next = normalizeFret(event.target.value); if (next !== null) edit(updateBar(sheet, section.id, bar.id, (current) => ({ ...current, strings: current.strings.map((row, rowIndex) => rowIndex !== stringIndex ? row : row.map((value, index) => index === position ? next : value)) }))); }} />)}
+                          <span>{tuning[stringIndex]}</span>{string.map((fret, position) => <input key={position} data-cell={`${bar.id}-${stringIndex}-${position}`} aria-label={`Bar ${number} string ${stringIndex + 1} position ${position + 1}`} autoComplete="off" spellCheck={false} inputMode="text" maxLength={2} value={fret} onPointerDown={() => { lastTyped.current = null; }} onFocus={(event) => { event.target.select(); setCursor({ barId: bar.id, stringIndex, position }); }} onKeyDown={(event) => moveCell(event, section.id, bar, stringIndex, position)} onChange={(event) => typeFret(section.id, bar, stringIndex, position, event.target.value)} />)}
                         </div>)}
                       </div>
                     </div>

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { doc, getFirestore, writeBatch } from 'firebase/firestore';
-import { createSongsheet, copySection, decodeSongsheet, encodeSongsheet, getBarLayout, normalizeFret, resizeBar, updateBar } from './songsheet.js';
+import { createSongsheet, copySection, decodeSongsheet, encodeSongsheet, getBarLayout, getPrintFragments, insertBarPosition, normalizeFret, removeBarPosition, resizeBar, setBarFret, updateBar } from './songsheet.js';
 
 globalThis.crypto ||= webcrypto;
 
@@ -102,4 +102,53 @@ test('expanded bars and manual spacing survive online storage encoding', () => {
   sheet.sections[0].bars[0] = { ...resizeBar(sheet.sections[0].bars[0], 32), spacing: 'wide' };
   sheet.sections[0].bars[0].strings[5][31] = '24';
   assert.deepEqual(decodeSongsheet(encodeSongsheet(sheet)), sheet);
+});
+
+test('compact columns only widen for double-digit frets and chord headings', () => {
+  const bar = createSongsheet().sections[0].bars[0];
+  bar.strings[0][0] = '1';
+  bar.strings[1][1] = '12';
+  const { widths, minimumWidth } = getBarLayout(bar);
+  assert.equal(widths[0], 14);
+  assert.equal(widths[1], 22);
+  assert.equal(widths[2], 14);
+  assert.ok(minimumWidth < 300);
+});
+
+test('typing at the end grows every string and leaves a new cursor column', () => {
+  const bar = createSongsheet().sections[0].bars[0];
+  const typed = setBarFret(bar, 0, 15, '7');
+  assert.equal(typed.chords.length, 17);
+  assert.equal(typed.strings[0][15], '7');
+  assert.ok(typed.strings.every((row) => row.length === 17 && row[16] === ''));
+  assert.equal(bar.strings[0][15], '');
+  const more = setBarFret(typed, 0, 16, '12');
+  assert.equal(more.chords.length, 18);
+  assert.equal(more.strings[0][16], '12');
+});
+
+test('inserting and removing a space moves all notes and chord headings together', () => {
+  const bar = createSongsheet().sections[0].bars[0];
+  bar.chords[3] = 'Am';
+  bar.strings[0][3] = '7';
+  bar.strings[5][3] = '0';
+  const inserted = insertBarPosition(bar, 3);
+  assert.equal(inserted.chords[3], '');
+  assert.equal(inserted.chords[4], 'Am');
+  assert.equal(inserted.strings[0][4], '7');
+  assert.equal(inserted.strings[5][4], '0');
+  assert.deepEqual(removeBarPosition(inserted, 3), bar);
+  assert.equal(bar.chords[3], 'Am');
+});
+
+test('print lines pack compact columns by actual width, without losing positions', () => {
+  const bar = resizeBar(createSongsheet().sections[0].bars[0], 32);
+  assert.equal(getPrintFragments(bar).length, 1);
+  const long = { ...bar, spacing: 'wide' };
+  const fragments = getPrintFragments(long);
+  assert.ok(fragments.length > 1);
+  assert.equal(fragments[0].start, 0);
+  assert.equal(fragments.at(-1).end, 32);
+  assert.deepEqual(fragments.flatMap((fragment) => fragment.widths), getBarLayout(long).widths);
+  assert.ok(fragments.every((fragment) => fragment.widths.reduce((sum, width) => sum + width, 0) <= 600));
 });
