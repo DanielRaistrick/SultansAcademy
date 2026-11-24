@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getNoteAtPosition, NOTE_COLORS } from '../utils/chordDetection';
 import { FRET_COUNT } from '../utils/fretboardConfig.js';
+import { INTERVAL_LABELS } from '../utils/scaleDatabase.js';
 
 const STRING_COUNT = 6;
 
-const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
+const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [], labelMode = 'both' }) => {
   const canvasRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 1200, height: 350 });
   const [hoveredNote, setHoveredNote] = useState(null);
@@ -46,7 +47,7 @@ const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
     ctx.scale(dpr, dpr);
 
     drawFretboard(ctx);
-  }, [dimensions, selectedNotes, hoveredNote, scaleNotes]);
+  }, [dimensions, selectedNotes, hoveredNote, scaleNotes, labelMode]);
 
   const drawFretboard = (ctx) => {
     // Clear canvas
@@ -198,6 +199,8 @@ const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
             color = '#00d4ff';
             radius = isHovered ? 16 : 14;
           }
+          // Stacked note + interval labels need a little more room
+          if (labelMode === 'both' && !isSelected) radius += 4;
 
           ctx.globalAlpha = 0.92;
           ctx.fillStyle = color;
@@ -217,9 +220,21 @@ const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
 
           ctx.globalAlpha = 1;
           ctx.fillStyle = '#000';
-          ctx.font = (isSelected || isRoot) ? 'bold 12px "Segoe UI"' : '11px "Segoe UI"';
           ctx.textAlign = 'center';
-          ctx.fillText(note, x, y + 4);
+          const intervalLabel = scaleNote ? INTERVAL_LABELS[scaleNote.interval].short : null;
+          const noteFont = (isSelected || isRoot) ? 'bold 12px "Segoe UI"' : '11px "Segoe UI"';
+          if (!intervalLabel || labelMode === 'notes') {
+            ctx.font = noteFont;
+            ctx.fillText(note, x, y + 4);
+          } else if (labelMode === 'intervals') {
+            ctx.font = 'bold 13px "Segoe UI"';
+            ctx.fillText(intervalLabel, x, y + 5);
+          } else {
+            ctx.font = noteFont;
+            ctx.fillText(note, x, y - 1);
+            ctx.font = 'bold 10px "Segoe UI"';
+            ctx.fillText(intervalLabel, x, y + 10);
+          }
 
         } else {
           // ── Normal mode (no scale active) ──────────────────

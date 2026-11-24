@@ -53,9 +53,26 @@ export const SCALE_TYPES = [
   { id: 'japanese',      name: 'Japanese (In)',           group: 'Exotic & Jazz',   intervals: [0, 1, 5, 7, 8] },
 ];
 
+/** Interval names indexed by semitones above the root. */
+export const INTERVAL_LABELS = [
+  { short: 'R',  name: 'Root' },
+  { short: '♭2', name: 'Minor 2nd' },
+  { short: '2',  name: 'Major 2nd' },
+  { short: '♭3', name: 'Minor 3rd' },
+  { short: '3',  name: 'Major 3rd' },
+  { short: '4',  name: 'Perfect 4th' },
+  { short: '♭5', name: 'Diminished 5th' },
+  { short: '5',  name: 'Perfect 5th' },
+  { short: '♭6', name: 'Minor 6th' },
+  { short: '6',  name: 'Major 6th' },
+  { short: '♭7', name: 'Minor 7th' },
+  { short: '7',  name: 'Major 7th' },
+];
+
 /**
  * Returns all positions of scale notes on a standard-tuned guitar.
- * Each entry: { string, fret, note, isRoot }
+ * Each entry: { string, fret, note, isRoot, interval } where interval is the
+ * semitone distance from the root (0-11), usable as an INTERVAL_LABELS index.
  * @param {string} root  - root note name
  * @param {number[]} intervals - semitone intervals
  * @param {number} [maxFret=22] - highest fret to include
@@ -77,6 +94,7 @@ export const getScaleNotesOnFretboard = (root, intervals, maxFret = FRET_COUNT) 
           fret,
           note: NOTE_SEQUENCE[noteIdx],
           isRoot: noteIdx === rootIndex,
+          interval: (noteIdx - rootIndex + 12) % 12,
         });
       }
     }
@@ -121,6 +139,9 @@ export const getScalePositions = (root, scaleType) => {
     };
   });
 };
+
+/** Returns the interval label ({ short, name }) for each scale degree, in order. */
+export const getScaleIntervalLabels = (intervals) => intervals.map((i) => INTERVAL_LABELS[i % 12]);
 
 /** Returns the note names in the scale (in interval order). */
 export const getScaleNoteNames = (root, intervals) => {

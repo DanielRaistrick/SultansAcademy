@@ -23,6 +23,7 @@ function App() {
   const [detectedChord, setDetectedChord] = useState(null);
   const [activePage, setActivePage] = useState('fretboard');
   const [scaleNotes, setScaleNotes] = useState([]);
+  const [labelMode, setLabelMode] = useState('both');
 
   // One-time migration: claim any documents that pre-date auth
   useEffect(() => {
@@ -147,7 +148,11 @@ function App() {
           onChordSelect={handleChordSelect} 
           chordDatabase={CHORD_DATABASE}
         />
-            <ScalePicker onScaleSelect={handleScaleSelect} />
+            <ScalePicker
+              onScaleSelect={handleScaleSelect}
+              labelMode={labelMode}
+              onLabelModeChange={setLabelMode}
+            />
             </div>
         
         <div className="fretboard-container">
@@ -155,6 +160,7 @@ function App() {
             selectedNotes={selectedNotes} 
             onNoteSelect={handleNoteSelect}
             scaleNotes={scaleNotes}
+            labelMode={labelMode}
           />
         </div>
 

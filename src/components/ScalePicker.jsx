@@ -4,6 +4,7 @@ import {
   ROOT_NOTES,
   ROOT_DISPLAY,
   getScaleNoteNames,
+  getScaleIntervalLabels,
   getScaleNotesOnFretboard,
   getScalePositions,
 } from '../utils/scaleDatabase';
@@ -11,7 +12,13 @@ import './ScalePicker.css';
 
 const GROUPS = [...new Set(SCALE_TYPES.map((s) => s.group))];
 
-const ScalePicker = ({ onScaleSelect }) => {
+const LABEL_MODES = [
+  { id: 'notes', label: 'Notes' },
+  { id: 'intervals', label: 'Intervals' },
+  { id: 'both', label: 'Both' },
+];
+
+const ScalePicker = ({ onScaleSelect, labelMode = 'both', onLabelModeChange }) => {
   const [root, setRoot] = useState('');
   const [scaleId, setScaleId] = useState('');
   const [positionId, setPositionId] = useState('all');
@@ -20,6 +27,10 @@ const ScalePicker = ({ onScaleSelect }) => {
   const noteNames = useMemo(
     () => (root && scaleType ? getScaleNoteNames(root, scaleType.intervals) : []),
     [root, scaleType],
+  );
+  const intervalLabels = useMemo(
+    () => (scaleType ? getScaleIntervalLabels(scaleType.intervals) : []),
+    [scaleType],
   );
   const positions = useMemo(
     () => (root && scaleType ? getScalePositions(root, scaleType) : []),
@@ -145,9 +156,32 @@ const ScalePicker = ({ onScaleSelect }) => {
               <span
                 key={i}
                 className={`scale-note-pill${i === 0 ? ' scale-note-pill--root' : ''}`}
+                title={intervalLabels[i]?.name}
               >
-                {n}
+                <span className="scale-note-pill-note">{n}</span>
+                <span className="scale-note-pill-interval">{intervalLabels[i]?.short}</span>
               </span>
+            ))}
+          </div>
+          <div className="scale-interval-key">
+            {intervalLabels.map((label, i) => (
+              <span key={i} className="scale-interval-key-item">
+                <strong>{label.short}</strong> {label.name}
+              </span>
+            ))}
+          </div>
+          <div className="scale-label-toggle" role="group" aria-label="Fretboard labels">
+            <span className="scale-label-toggle-title">Fretboard labels</span>
+            {LABEL_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                className={`scale-label-toggle-btn${labelMode === mode.id ? ' scale-label-toggle-btn--active' : ''}`}
+                aria-pressed={labelMode === mode.id}
+                onClick={() => onLabelModeChange?.(mode.id)}
+              >
+                {mode.label}
+              </button>
             ))}
           </div>
           <div className="scale-legend">
