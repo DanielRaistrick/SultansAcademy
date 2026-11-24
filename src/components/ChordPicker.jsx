@@ -22,7 +22,7 @@ const ChordPicker = ({ onChordSelect, chordDatabase }) => {
     };
 
     chordDatabase.forEach((chord, index) => {
-      const name = chord.name.toLowerCase();
+      const name = chord.name.toLowerCase().replace(/ \(fret \d+\)$/, '');
       const chordOption = {
         ...chord,
         id: index,
@@ -49,7 +49,7 @@ const ChordPicker = ({ onChordSelect, chordDatabase }) => {
         groups['Augmented'].push(chordOption);
       } else if (name.includes('5') || name.includes('power')) {
         groups['Power Chords'].push(chordOption);
-      } else if (name.includes('m') || name.includes('minor')) {
+      } else if (name.includes('minor') || /^[a-g](?:#|b|♭)?m(?:\b|\d)/i.test(name)) {
         groups['Minor Chords'].push(chordOption);
       } else {
         groups['Major Chords'].push(chordOption);
@@ -115,7 +115,7 @@ const ChordPicker = ({ onChordSelect, chordDatabase }) => {
           <div className="chord-info-pattern">
             Pattern: {chordDatabase[parseInt(selectedChord)].frets
               .map(f => f === -1 ? 'X' : f)
-              .join('')}
+              .join(' ')}
           </div>
           <div className="chord-info-notes">
             Notes: {chordDatabase[parseInt(selectedChord)].notes.join(', ')}

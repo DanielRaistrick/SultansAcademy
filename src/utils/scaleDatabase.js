@@ -1,4 +1,5 @@
-import { NOTE_SEQUENCE, STANDARD_TUNING } from './chordDetection';
+import { NOTE_SEQUENCE, STANDARD_TUNING } from './chordDetection.js';
+import { FRET_COUNT } from './fretboardConfig.js';
 
 export const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -57,9 +58,9 @@ export const SCALE_TYPES = [
  * Each entry: { string, fret, note, isRoot }
  * @param {string} root  - root note name
  * @param {number[]} intervals - semitone intervals
- * @param {number} [maxFret=12] - highest fret to include
+ * @param {number} [maxFret=22] - highest fret to include
  */
-export const getScaleNotesOnFretboard = (root, intervals, maxFret = 12) => {
+export const getScaleNotesOnFretboard = (root, intervals, maxFret = FRET_COUNT) => {
   const rootIndex = NOTE_SEQUENCE.indexOf(root);
   if (rootIndex === -1) return [];
 
@@ -96,8 +97,7 @@ export const getScalePositions = (root, scaleType) => {
   // Pentatonic / blues shapes fit neatly in 4 frets; 7-note scales need 5.
   const windowSize = scaleType.intervals.length <= 5 ? 3 : 4;
 
-  // Extend to fret 15 so patterns near the top of a 12-fret board are captured.
-  const allNotes = getScaleNotesOnFretboard(root, scaleType.intervals, 15);
+  const allNotes = getScaleNotesOnFretboard(root, scaleType.intervals, FRET_COUNT);
 
   // Collect every fret where the root appears (any string).
   const rootFrets = [...new Set(allNotes.filter((n) => n.isRoot).map((n) => n.fret))].sort(

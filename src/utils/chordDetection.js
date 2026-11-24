@@ -1,4 +1,6 @@
 // Guitar tuning: Standard tuning (E A D G B E)
+import { FRET_COUNT } from './fretboardConfig.js';
+
 export const STANDARD_TUNING = ['E', 'A', 'D', 'G', 'B', 'E'];
 export const NOTE_SEQUENCE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -36,7 +38,7 @@ export function getNoteAtPosition(stringIndex, fret) {
  * Format: { name: 'Chord Name', frets: [low E, A, D, G, B, high E] }
  * -1 means don't play that string (X), 0 means open string
  */
-export const CHORD_DATABASE = [
+const BASE_CHORD_DATABASE = [
   // Open Major chords
   { name: 'C Major', frets: [-1, 3, 2, 0, 1, 0], notes: ['C', 'E', 'G'] },
   { name: 'C Major (alternate)', frets: [-1, 3, 2, 0, 1, 3], notes: ['C', 'E', 'G'] },
@@ -183,6 +185,70 @@ export const CHORD_DATABASE = [
   { name: 'E9', frets: [0, 2, 0, 1, 0, 2], notes: ['E', 'G#', 'B', 'D', 'F#'] },
   { name: 'G9', frets: [3, 2, 0, 2, 0, 1], notes: ['G', 'B', 'D', 'F', 'A'] },
   { name: 'D9', frets: [-1, -1, 0, 2, 1, 0], notes: ['D', 'F#', 'A', 'C', 'E'] },
+];
+
+const ENHARMONIC_NOTES = {
+  Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#',
+  'D♭': 'C#', 'E♭': 'D#', 'G♭': 'F#', 'A♭': 'G#', 'B♭': 'A#',
+};
+
+function getMovableChordVoicings(chords) {
+  const existingPatterns = new Set(chords.map((chord) => chord.frets.join(',')));
+  const templateKeys = new Set();
+  const templates = [];
+
+  for (const chord of chords) {
+    const isBarreOrPowerChord = chord.name.includes('(bar') || /5$/.test(chord.name);
+    const minNoteCount = /5$/.test(chord.name) ? 3 : 4;
+    const frettedNotes = chord.frets.filter((fret) => fret > 0);
+    if (!isBarreOrPowerChord || frettedNotes.length < minNoteCount || chord.frets.some((fret) => fret === 0)) {
+      continue;
+    }
+
+    const minFret = Math.min(...frettedNotes);
+    const normalizedFrets = chord.frets.map((fret) => (fret < 0 ? fret : fret - minFret));
+    const rootMatch = chord.name.match(/^([A-G](?:#|b|♭)?)/);
+    if (!rootMatch) continue;
+
+    const suffix = chord.name.slice(rootMatch[0].length)
+      .replace(/\s*\(bar(?: [^)]+)?\)/i, ' (bar)');
+    const templateKey = `${suffix}|${normalizedFrets.join(',')}`;
+    if (templateKeys.has(templateKey)) continue;
+    templateKeys.add(templateKey);
+    templates.push({ chord, minFret, normalizedFrets, root: ENHARMONIC_NOTES[rootMatch[1]] ?? rootMatch[1], suffix });
+  }
+
+  const generated = [];
+  for (const { chord, minFret, root, suffix } of templates) {
+    const maxFret = Math.max(...chord.frets);
+    const rootIndex = NOTE_SEQUENCE.indexOf(root);
+    const maxShift = FRET_COUNT - maxFret;
+
+    for (let shift = 1; shift <= maxShift; shift++) {
+      const frets = chord.frets.map((fret) => (fret < 0 ? fret : fret + shift));
+      const pattern = frets.join(',');
+      if (existingPatterns.has(pattern)) continue;
+      existingPatterns.add(pattern);
+
+      const notes = [...new Set(chord.notes.map((note) => {
+        const noteIndex = NOTE_SEQUENCE.indexOf(ENHARMONIC_NOTES[note] ?? note);
+        return NOTE_SEQUENCE[(noteIndex + shift) % NOTE_SEQUENCE.length];
+      }))];
+      const shiftedRoot = NOTE_SEQUENCE[(rootIndex + shift) % NOTE_SEQUENCE.length];
+      generated.push({
+        name: `${shiftedRoot}${suffix} (fret ${minFret + shift})`,
+        frets,
+        notes,
+      });
+    }
+  }
+
+  return generated;
+}
+
+export const CHORD_DATABASE = [
+  ...BASE_CHORD_DATABASE,
+  ...getMovableChordVoicings(BASE_CHORD_DATABASE),
 ];
 
 /**

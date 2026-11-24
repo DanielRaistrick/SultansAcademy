@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getNoteAtPosition, NOTE_COLORS } from '../utils/chordDetection';
+import { FRET_COUNT } from '../utils/fretboardConfig.js';
 
-const FRET_COUNT = 12;
 const STRING_COUNT = 6;
 
 const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
@@ -84,7 +84,7 @@ const Fretboard = ({ selectedNotes, onNoteSelect, scaleNotes = [] }) => {
     }
 
     // Draw fret markers with premium inlay style
-    const markerFrets = [3, 5, 7, 9, 12];
+    const markerFrets = [3, 5, 7, 9, 12, 15, 17, 19, 21];
     const doubleFrets = [12];
     markerFrets.forEach(fret => {
       const x = padding.left + (fret - 0.5) * fretWidth;
